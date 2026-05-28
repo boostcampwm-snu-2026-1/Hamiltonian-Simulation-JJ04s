@@ -9,9 +9,9 @@
 
 ## 2. 개발 관리
 - **브랜치**: `main` -> `dev` -> `features` 구조로 관리
- - `main`: 최종 배포 브랜치
- - `dev`: 개발 통합 브랜치
- - `features/{기능명}`: 단위 기능 개발 브랜치
+  - `main`: 최종 배포 브랜치
+  - `dev`: 개발 통합 브랜치
+  - `features/{기능명}`: 단위 기능 개발 브랜치
 - **Task 관리**: GitHub Issues를 통해 개발 작업 등록 및 관리
 - **문서 관리**: GitHub Wiki를 통해 기획서, 기술 문서, 회고 작성
 - **PR 규칙**: `feature` 브랜치 작업 후 `dev` 브랜치로 Pull Request 진행
