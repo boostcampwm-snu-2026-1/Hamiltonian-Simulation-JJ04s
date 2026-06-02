@@ -1,8 +1,10 @@
 frontend/
 ├── src/
 │   ├── equation-solvers/              # 핵심 수치해석 엔전
-│   │   ├── time-independent.js        # 정적 상태 계산
-│   │   └── time-evolution.js          # 시간 진화 계산
+│   │   ├── time-independent-1d.js     # 1d 정적 상태 계산
+│   │   ├── time-independent-2d.js     # 2d 정적 상태 계산
+│   │   ├── time-evolution-1d.js       # 1d 시간 진화 계산
+│   │   └── time-evolution-2d.js       # 2d 시간 진화 계산
 │   ├── component/
 │   │   └── workspace/                 # 메인 시뮬레이션 화면
 │   │       ├── PotentialEditor/       # 퍼텐셜 에너지 편집기
