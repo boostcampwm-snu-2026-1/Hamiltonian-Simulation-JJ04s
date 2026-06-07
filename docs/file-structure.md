@@ -15,6 +15,6 @@ frontend/
 │   │   └── SimulationContext.jsx
 │   ├── hook/                          # 전역 상태 관리
 │   │   └── useSimulation.js
-│   ├── utils/                          # 수식 파싱 및 배열 생성
+│   ├── utils/                         # 수식 파싱 및 배열 생성
 │   │   └── math-parser.js
 ...

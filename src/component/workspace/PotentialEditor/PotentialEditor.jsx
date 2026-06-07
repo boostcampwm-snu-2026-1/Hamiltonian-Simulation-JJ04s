@@ -1,5 +1,7 @@
 import { useSimulation } from '../../../hook/useSimulation';
+import PotentialDraw1D from './PotentialDraw1D';
 import './PotentialEditor.css';
+import { parsePotential1D } from '../../../utils/math-parser';
 
 const gridCells = Array.from({ length: 144 }, (_, index) => {
   const row = Math.floor(index / 12);
@@ -23,29 +25,15 @@ const gridCells = Array.from({ length: 144 }, (_, index) => {
   return 'base';
 });
 
-const intervalCells = Array.from({ length: 18 }, (_, index) => {
-  if (index >= 7 && index <= 11) {
-    return 'selected';
-  }
-
-  if (index >= 4 && index <= 13) {
-    return 'raised';
-  }
-
-  if (index >= 2 && index <= 15) {
-    return 'soft';
-  }
-
-  return 'base';
-});
-
 function PotentialEditor() {
   const {
     commonState,
+    updateCommonState,
     state1D,
     updateState1D,
     state2D,
     updateState2D,
+    updateControlState,
   } = useSimulation();
 
   const is2D = commonState.type === '2D';
@@ -59,6 +47,31 @@ function PotentialEditor() {
     }
 
     updateState1D({ potentialRaw1D: event.target.value });
+  };
+
+  const applyFormula = () => {
+    if (is2D) return;
+
+    const expression = state1D.potentialRaw1D.trim();
+
+    if (expression === '') return;
+
+    updateCommonState({ isValidTesting: true });
+
+    try {
+      const potentialArray1D = parsePotential1D(expression, {
+        length: commonState.length,
+        gridSteps: commonState.gridSteps,
+      });
+
+      updateState1D({ potentialArray1D });
+      updateControlState({ isPotentialValid: true });
+    } catch (error) {
+      updateControlState({ isPotentialValid: false });
+      console.error(error);
+    } finally {
+      updateCommonState({ isValidTesting: false });
+    }
   };
 
   return (
@@ -77,6 +90,11 @@ function PotentialEditor() {
             onChange={updateExpression}
             placeholder={is2D ? 'x^2 + y^2' : 'x^2 / 2'}
           />
+          {!is2D && (
+            <button type="button" onClick={applyFormula}>
+              Apply
+            </button>
+          )}
         </label>
 
         {is2D ? (
@@ -95,25 +113,7 @@ function PotentialEditor() {
             </div>
           </div>
         ) : (
-          <div className="potential-interval-editor" aria-label="1D potential interval preview">
-            <div className="interval-axis-y">V</div>
-            <div className="interval-plot">
-              {intervalCells.map((cell, index) => (
-                <span key={index} className={`interval-cell ${cell}`} />
-              ))}
-            </div>
-            <div className="interval-grid">
-              {intervalCells.map((cell, index) => (
-                <span key={index} className={`interval-tick ${cell}`} />
-              ))}
-            </div>
-            <div className="interval-axis-x">x</div>
-            <div className="value-strip interval-value-strip">
-              <span>V 0</span>
-              <div />
-              <span>V 8</span>
-            </div>
-          </div>
+          <PotentialDraw1D />
         )}
       </div>
     </section>
