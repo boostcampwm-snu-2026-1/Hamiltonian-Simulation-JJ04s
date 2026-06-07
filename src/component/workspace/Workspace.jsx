@@ -1,4 +1,5 @@
 import { useSimulation } from '../../hook/useSimulation';
+import AnalysisControl from './AnalysisControl/AnalysisControl';
 import PhysicalParameters from './PhysicalParameters/PhysicalParameters';
 import PotentialEditor from './PotentialEditor/PotentialEditor';
 import './Workspace.css';
@@ -59,7 +60,7 @@ function Workspace() {
       <section className="workspace-base" aria-label="Simulation workspace base">
         <div className="workspace-left-column">
           <PotentialEditor />
-          <div className="workspace-left-slot" aria-label="Reserved lower-left workspace" />
+          <AnalysisControl />
         </div>
 
         <div className="workspace-right-column">
