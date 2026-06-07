@@ -1,4 +1,5 @@
 import { useSimulation } from '../../hook/useSimulation';
+import PotentialEditor from './PotentialEditor/PotentialEditor';
 import './Workspace.css';
 
 function Workspace() {
@@ -37,6 +38,18 @@ function Workspace() {
       </header>
 
       <section className="workspace-base" aria-label="Simulation workspace base">
+        <div className="workspace-left-column">
+          <PotentialEditor />
+
+          <section className="analysis-placeholder" aria-labelledby="analysis-placeholder-title">
+            <header className="panel-header">
+              <h2 id="analysis-placeholder-title">Analysis Control</h2>
+              <span>Pending</span>
+            </header>
+            <div className="placeholder-body" />
+          </section>
+        </div>
+
         <div className="workspace-canvas" />
       </section>
     </main>

@@ -1,0 +1,258 @@
+.potential-editor {
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  border: 1px solid #ccd4dc;
+  border-radius: 8px;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.potential-editor-body {
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto 346px;
+  gap: 12px;
+  padding: 12px;
+}
+
+.expression-field {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+}
+
+.expression-field span {
+  color: #2e3a43;
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.expression-field input {
+  width: 100%;
+  min-height: 36px;
+  padding: 8px 10px;
+  border: 1px solid #cbd3da;
+  border-radius: 8px;
+  color: #182128;
+  background: #ffffff;
+  font: inherit;
+  font-weight: 700;
+}
+
+.expression-field input::placeholder {
+  color: #98a2aa;
+}
+
+.potential-interval-editor,
+.potential-grid-editor {
+  height: 346px;
+  min-height: 346px;
+  position: relative;
+  border: 1px solid #d8e0e7;
+  border-radius: 8px;
+  background: #fbfcfd;
+  overflow: hidden;
+}
+
+.potential-interval-editor {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  grid-template-rows: minmax(120px, 1fr) 34px 18px 28px;
+  gap: 6px;
+  padding: 12px;
+}
+
+.interval-axis-y,
+.interval-axis-x {
+  color: #60707c;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.interval-axis-y {
+  justify-self: center;
+}
+
+.interval-axis-x {
+  grid-column: 2;
+  justify-self: end;
+}
+
+.interval-plot {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(18, minmax(0, 1fr));
+  align-items: end;
+  gap: 2px;
+  padding: 14px 10px 0;
+  border-left: 1px solid #bfc9d2;
+  border-bottom: 1px solid #bfc9d2;
+  background: #ffffff;
+}
+
+.interval-cell {
+  min-width: 0;
+  border: 1px solid transparent;
+  border-bottom: 0;
+  background: #ffffff;
+}
+
+.interval-cell.base {
+  height: 12%;
+  background: #ffffff;
+}
+
+.interval-cell.soft {
+  height: 34%;
+  background: #e8f0f3;
+}
+
+.interval-cell.raised {
+  height: 58%;
+  background: #b8d2dc;
+}
+
+.interval-cell.selected {
+  height: 78%;
+  border-color: #2f6f8f;
+  background: #5f99ad;
+}
+
+.interval-grid {
+  grid-column: 2;
+  display: grid;
+  grid-template-columns: repeat(18, minmax(0, 1fr));
+  border: 1px solid #9aa9b4;
+  background: #ffffff;
+}
+
+.interval-tick {
+  min-width: 0;
+  border-right: 1px solid #d6dee5;
+}
+
+.interval-tick.soft {
+  background: #e8f0f3;
+}
+
+.interval-tick.raised {
+  background: #b8d2dc;
+}
+
+.interval-tick.selected {
+  background: #5f99ad;
+  box-shadow: inset 0 0 0 1px #2f6f8f;
+}
+
+.interval-value-strip {
+  grid-column: 2;
+}
+
+.potential-grid-editor {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) 18px 28px;
+  gap: 6px;
+  padding: 14px clamp(34px, 10vw, 76px);
+  justify-content: center;
+}
+
+.potential-grid {
+  aspect-ratio: 1 / 1;
+  width: min(100%, 260px);
+  align-self: center;
+  justify-self: center;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  grid-template-rows: repeat(12, minmax(0, 1fr));
+  border: 1px solid #9aa9b4;
+  background: #ffffff;
+}
+
+.grid-cell {
+  min-width: 0;
+  min-height: 0;
+  border-right: 1px solid #d6dee5;
+  border-bottom: 1px solid #d6dee5;
+}
+
+.grid-cell.base {
+  background: #ffffff;
+}
+
+.grid-cell.soft {
+  background: #e8f0f3;
+}
+
+.grid-cell.raised {
+  background: #b8d2dc;
+}
+
+.grid-cell.selected {
+  border-color: #2f6f8f;
+  background: #5f99ad;
+  box-shadow: inset 0 0 0 1px #2f6f8f;
+}
+
+.axis-label {
+  color: #60707c;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.axis-label-y {
+  align-self: start;
+  justify-self: center;
+}
+
+.axis-label-x {
+  grid-column: 2;
+  width: min(100%, 260px);
+  justify-self: end;
+}
+
+.value-strip {
+  grid-column: 2;
+  width: min(100%, 260px);
+  justify-self: center;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  color: #60707c;
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
+.value-strip div {
+  height: 8px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #ffffff, #5f99ad);
+  box-shadow: inset 0 0 0 1px #c4d1da;
+}
+
+@media (max-width: 620px) {
+  .expression-field {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .potential-editor-body {
+    grid-template-rows: auto 320px;
+  }
+
+  .potential-interval-editor,
+  .potential-grid-editor {
+    height: 320px;
+    min-height: 320px;
+  }
+
+  .potential-grid,
+  .axis-label-x,
+  .value-strip {
+    width: min(100%, 230px);
+  }
+}
