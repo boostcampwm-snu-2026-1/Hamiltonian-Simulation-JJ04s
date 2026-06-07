@@ -78,7 +78,10 @@ function PotentialDraw1D() {
             next[i] = value;
         }
 
-        updateState1D({ potentialArray1D: next });
+        updateState1D({
+            potentialArray1D: next,
+            potentialRaw1D: '',
+        });
     }
 
     function isSelected(index) {

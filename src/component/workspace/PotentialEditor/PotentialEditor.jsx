@@ -1,6 +1,7 @@
 import { useSimulation } from '../../../hook/useSimulation';
 import PotentialDraw1D from './PotentialDraw1D';
 import './PotentialEditor.css';
+import { parsePotential1D } from '../../../utils/math-parser';
 
 const gridCells = Array.from({ length: 144 }, (_, index) => {
   const row = Math.floor(index / 12);
@@ -27,10 +28,12 @@ const gridCells = Array.from({ length: 144 }, (_, index) => {
 function PotentialEditor() {
   const {
     commonState,
+    updateCommonState,
     state1D,
     updateState1D,
     state2D,
     updateState2D,
+    updateControlState,
   } = useSimulation();
 
   const is2D = commonState.type === '2D';
@@ -44,6 +47,31 @@ function PotentialEditor() {
     }
 
     updateState1D({ potentialRaw1D: event.target.value });
+  };
+
+  const applyFormula = () => {
+    if (is2D) return;
+
+    const expression = state1D.potentialRaw1D.trim();
+
+    if (expression === '') return;
+
+    updateCommonState({ isValidTesting: true });
+
+    try {
+      const potentialArray1D = parsePotential1D(expression, {
+        length: commonState.length,
+        gridSteps: commonState.gridSteps,
+      });
+
+      updateState1D({ potentialArray1D });
+      updateControlState({ isPotentialValid: true });
+    } catch (error) {
+      updateControlState({ isPotentialValid: false });
+      console.error(error);
+    } finally {
+      updateCommonState({ isValidTesting: false });
+    }
   };
 
   return (
@@ -62,6 +90,11 @@ function PotentialEditor() {
             onChange={updateExpression}
             placeholder={is2D ? 'x^2 + y^2' : 'x^2 / 2'}
           />
+          {!is2D && (
+            <button type="button" onClick={applyFormula}>
+              Apply
+            </button>
+          )}
         </label>
 
         {is2D ? (

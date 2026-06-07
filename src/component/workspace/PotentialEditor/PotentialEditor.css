@@ -19,7 +19,7 @@
 .expression-field {
   min-width: 0;
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 8px;
 }
@@ -44,6 +44,23 @@
 
 .expression-field input::placeholder {
   color: #98a2aa;
+}
+
+.expression-field button {
+  min-height: 36px;
+  padding: 8px 12px;
+  border: 1px solid #cbd3da;
+  border-radius: 8px;
+  color: #182128;
+  background: #ffffff;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.expression-field button:hover {
+  border-color: #5f99ad;
+  background: #eef5f8;
 }
 
 .potential-interval-editor,
