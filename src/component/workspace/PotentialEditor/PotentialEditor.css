@@ -83,13 +83,15 @@
 .interval-plot {
   min-height: 0;
   display: grid;
-  grid-template-columns: repeat(18, minmax(0, 1fr));
+  grid-template-columns: repeat(var(--grid-steps, 18), minmax(0, 1fr));
   align-items: end;
-  gap: 2px;
+  gap: 0;
   padding: 10px 8px 0;
   border-left: 1px solid #bfc9d2;
   border-bottom: 1px solid #bfc9d2;
   background: #ffffff;
+  touch-action: none;
+  user-select: none;
 }
 
 .interval-cell {
@@ -101,29 +103,28 @@
 
 .interval-cell.base {
   height: 12%;
-  background: #ffffff;
+  background: #d8e3e9;
 }
 
 .interval-cell.soft {
   height: 34%;
-  background: #e8f0f3;
+  background: #9fc5d2;
 }
 
 .interval-cell.raised {
   height: 58%;
-  background: #b8d2dc;
+  background: #5f99ad;
 }
 
 .interval-cell.selected {
-  height: 78%;
   border-color: #2f6f8f;
-  background: #5f99ad;
+  box-shadow: inset 0 0 0 1px #2f6f8f;
 }
 
 .interval-grid {
   grid-column: 2;
   display: grid;
-  grid-template-columns: repeat(18, minmax(0, 1fr));
+  grid-template-columns: repeat(var(--grid-steps, 18), minmax(0, 1fr));
   border: 1px solid #9aa9b4;
   background: #ffffff;
 }
@@ -133,21 +134,53 @@
   border-right: 1px solid #d6dee5;
 }
 
+.interval-tick.base {
+  background: #edf3f6;
+}
+
 .interval-tick.soft {
-  background: #e8f0f3;
+  background: #9fc5d2;
 }
 
 .interval-tick.raised {
-  background: #b8d2dc;
+  background: #5f99ad;
 }
 
 .interval-tick.selected {
-  background: #5f99ad;
   box-shadow: inset 0 0 0 1px #2f6f8f;
 }
 
 .interval-value-strip {
   grid-column: 2;
+  width: min(100%, 260px);
+}
+
+.interval-value-strip input,
+.interval-value-strip button {
+  min-width: 0;
+  min-height: 28px;
+  border: 1px solid #cbd3da;
+  border-radius: 8px;
+  color: #182128;
+  background: #ffffff;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.interval-value-strip input {
+  width: 100%;
+  padding: 4px 8px;
+}
+
+.interval-value-strip button {
+  padding: 4px 10px;
+  cursor: pointer;
+}
+
+.interval-value-strip button:hover {
+  border-color: #5f99ad;
+  background: #eef5f8;
 }
 
 .potential-grid-editor {

@@ -1,4 +1,5 @@
 import { useSimulation } from '../../../hook/useSimulation';
+import PotentialDraw1D from './PotentialDraw1D';
 import './PotentialEditor.css';
 
 const gridCells = Array.from({ length: 144 }, (_, index) => {
@@ -17,22 +18,6 @@ const gridCells = Array.from({ length: 144 }, (_, index) => {
   }
 
   if (isSoft) {
-    return 'soft';
-  }
-
-  return 'base';
-});
-
-const intervalCells = Array.from({ length: 18 }, (_, index) => {
-  if (index >= 7 && index <= 11) {
-    return 'selected';
-  }
-
-  if (index >= 4 && index <= 13) {
-    return 'raised';
-  }
-
-  if (index >= 2 && index <= 15) {
     return 'soft';
   }
 
@@ -95,25 +80,7 @@ function PotentialEditor() {
             </div>
           </div>
         ) : (
-          <div className="potential-interval-editor" aria-label="1D potential interval preview">
-            <div className="interval-axis-y">V</div>
-            <div className="interval-plot">
-              {intervalCells.map((cell, index) => (
-                <span key={index} className={`interval-cell ${cell}`} />
-              ))}
-            </div>
-            <div className="interval-grid">
-              {intervalCells.map((cell, index) => (
-                <span key={index} className={`interval-tick ${cell}`} />
-              ))}
-            </div>
-            <div className="interval-axis-x">x</div>
-            <div className="value-strip interval-value-strip">
-              <span>V 0</span>
-              <div />
-              <span>V 8</span>
-            </div>
-          </div>
+          <PotentialDraw1D />
         )}
       </div>
     </section>
