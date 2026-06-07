@@ -1,0 +1,133 @@
+:root {
+  color: #202124;
+  background: #f4f6f8;
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+button {
+  font: inherit;
+}
+
+.workspace-shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  background: #f4f6f8;
+}
+
+.workspace-topbar {
+  min-height: 66px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 10px 16px;
+  border-bottom: 1px solid #cfd6dd;
+  background: #ffffff;
+}
+
+.workspace-title {
+  min-width: 0;
+}
+
+.workspace-title p {
+  margin: 0 0 2px;
+  color: #64717d;
+  font-size: 0.74rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.workspace-title h1 {
+  margin: 0;
+  color: #171b1f;
+  font-size: 1.22rem;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+.workspace-summary {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.workspace-summary span {
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 10px;
+  border: 1px solid #d4dbe2;
+  border-radius: 8px;
+  color: #34414c;
+  background: #ffffff;
+  font-size: 0.8rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.dimension-switch {
+  display: grid;
+  grid-template-columns: repeat(2, 48px);
+  padding: 3px;
+  border: 1px solid #cbd3da;
+  border-radius: 8px;
+  background: #eef1f4;
+}
+
+.dimension-switch button {
+  min-height: 28px;
+  border: 0;
+  border-radius: 6px;
+  color: #4f5d68;
+  background: transparent;
+  font-size: 0.82rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.dimension-switch button.active {
+  color: #ffffff;
+  background: #2f6f8f;
+}
+
+.workspace-base {
+  min-height: 0;
+  display: flex;
+  padding: 10px;
+}
+
+.workspace-canvas {
+  flex: 1;
+  min-width: 0;
+  min-height: 520px;
+  border: 1px solid #ccd4dc;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+@media (max-width: 860px) {
+  .workspace-topbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .workspace-summary {
+    justify-content: flex-start;
+  }
+}
