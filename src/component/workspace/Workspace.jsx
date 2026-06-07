@@ -1,5 +1,6 @@
 import { useSimulation } from '../../hook/useSimulation';
 import AnalysisControl from './AnalysisControl/AnalysisControl';
+import AnalysisView from './AnalysisView/AnalysisView';
 import PhysicalParameters from './PhysicalParameters/PhysicalParameters';
 import PotentialEditor from './PotentialEditor/PotentialEditor';
 import './Workspace.css';
@@ -65,7 +66,7 @@ function Workspace() {
 
         <div className="workspace-right-column">
           <PhysicalParameters />
-          <div className="workspace-analysis-slot" aria-label="Analysis workspace" />
+          <AnalysisView />
         </div>
       </section>
     </main>

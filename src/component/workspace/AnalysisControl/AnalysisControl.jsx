@@ -205,6 +205,7 @@ function StationaryLevelPicker({ levels, selectedIndex, onSelect }) {
 function AnalysisControl() {
   const {
     commonState,
+    updateCommonState,
     state1D,
     updateWavePacket1D,
     state2D,
@@ -221,6 +222,8 @@ function AnalysisControl() {
   const packet = is2D ? state2D.wavePacket2D : state1D.wavePacket1D;
   const updatePacket = is2D ? updateWavePacket2D : updateWavePacket1D;
   const energyLevels = getEnergyLevels(is2D ? state2D.eigenvalues2D : state1D.eigenvalues1D);
+  const stopEvolution = () => updateCommonState({ isSimulating: false });
+  const resetEvolution = () => updateCommonState({ isSimulating: false, simulationTime: 0 });
 
   return (
     <section className="analysis-control" aria-labelledby="analysis-control-title">
@@ -313,6 +316,21 @@ function AnalysisControl() {
                   value={packet.sigma}
                   onChange={(value) => updatePacket({ sigma: value })}
                 />
+                <div className="evolution-actions">
+                  <button
+                    type="button"
+                    className="primary"
+                    onClick={() => updateCommonState({ isSimulating: true })}
+                  >
+                    Play
+                  </button>
+                  <button type="button" onClick={stopEvolution}>
+                    Stop
+                  </button>
+                  <button type="button" onClick={resetEvolution}>
+                    Reset
+                  </button>
+                </div>
               </div>
             </div>
           </>

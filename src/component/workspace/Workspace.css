@@ -147,14 +147,6 @@ input {
   gap: 10px;
 }
 
-.workspace-analysis-slot {
-  min-width: 0;
-  min-height: 0;
-  border: 1px solid #ccd4dc;
-  border-radius: 8px;
-  background: #ffffff;
-}
-
 .panel-header {
   min-height: 46px;
   display: flex;
