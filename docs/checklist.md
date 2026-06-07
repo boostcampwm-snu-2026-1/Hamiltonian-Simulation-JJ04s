@@ -7,8 +7,8 @@
 ### 📝 실무 구현 체크리스트 (Revised)
 
 #### Phase 1. 인프라 및 전역 상태 구축 (Foundation)
-- [ ] **SimulationContext 구현**: 1D/2D 분리형 상태 변수 및 `useSimulation` 훅 작성
-- [ ] **Workspace 레이아웃 설정**: 4분할 화면 구성을 위한 Container 및 레이아웃 시스템 구축
+- [x] **SimulationContext 구현**: 1D/2D 분리형 상태 변수 및 `useSimulation` 훅 작성
+- [x] **Workspace 레이아웃 설정**: 4분할 화면 구성을 위한 Container 및 레이아웃 시스템 구축
 
 #### Phase 2. 입력 및 제어 시스템 (Input & Validation)
 - [ ] **Potential Energy Editor UI (#4)**: 좌상단 편집기 프레임 및 모드 스위칭
