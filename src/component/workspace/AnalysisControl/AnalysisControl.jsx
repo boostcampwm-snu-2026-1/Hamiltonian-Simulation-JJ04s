@@ -6,9 +6,46 @@ const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 
 const formatValue = (value) => Number(value).toFixed(2);
 
+const fallbackEnergyLevels = [
+  { n: 0, energy: 0.7 },
+  { n: 1, energy: 1.8 },
+  { n: 2, energy: 3.2 },
+  { n: 3, energy: 3.2 },
+  { n: 4, energy: 5.1 },
+  { n: 5, energy: 6.9 },
+];
+
 const getPositionPercent = (value, length) => {
   const halfLength = length / 2;
   return clamp((value + halfLength) / length, 0, 1);
+};
+
+const getEnergyLevels = (eigenvalues) => {
+  if (!Array.isArray(eigenvalues) || eigenvalues.length === 0) {
+    return fallbackEnergyLevels;
+  }
+
+  return eigenvalues.slice(0, 8).map((energy, index) => ({
+    n: index,
+    energy,
+  }));
+};
+
+const getEnergyGroups = (levels) => {
+  const groups = [];
+
+  levels.forEach((level) => {
+    const group = groups.find(item => Math.abs(item.energy - level.energy) < 1e-6);
+
+    if (group) {
+      group.levels.push(level);
+      return;
+    }
+
+    groups.push({ energy: level.energy, levels: [level] });
+  });
+
+  return groups;
 };
 
 const buildGaussianPath = (x0, sigma, length) => {
@@ -91,6 +128,80 @@ function TwoDPreview({ tab, packet, length }) {
   );
 }
 
+function StationaryLevelPicker({ levels, selectedIndex, onSelect }) {
+  const minEnergy = Math.min(...levels.map(level => level.energy));
+  const maxEnergy = Math.max(...levels.map(level => level.energy));
+  const range = Math.max(maxEnergy - minEnergy, 1);
+  const selectedLevel = levels.find(level => level.n === selectedIndex) ?? levels[0];
+  const selectedSliderIndex = Math.max(0, levels.findIndex(level => level.n === selectedLevel.n));
+  const groups = getEnergyGroups(levels);
+  const toY = (energy) => 152 - ((energy - minEnergy) / range) * 116;
+
+  return (
+    <div className="stationary-editor">
+      <div className="stationary-selected-readout">
+        <span>Selected</span>
+        <strong>n = {selectedLevel.n}</strong>
+        <em>E = {formatValue(selectedLevel.energy)}</em>
+      </div>
+
+      <div className="stationary-level-layout">
+        <div className="stationary-n-selector" aria-label="Select energy level n">
+          <div className="stationary-n-track">
+            {levels.map((level, index) => (
+              <button
+                key={level.n}
+                type="button"
+                className={index === selectedSliderIndex ? 'active' : ''}
+                onClick={() => onSelect(level.n)}
+                aria-label={`Select n ${level.n}`}
+              >
+                {level.n}
+              </button>
+            ))}
+          </div>
+          <strong>n = {selectedLevel.n}</strong>
+        </div>
+
+        <div className="energy-level-frame">
+          <svg className="energy-level-chart" viewBox="0 0 280 180" role="img" aria-label="Stationary energy level picker">
+            <line className="energy-axis" x1="46" y1="28" x2="46" y2="158" />
+            <text className="energy-axis-label" x="16" y="34">E</text>
+            {groups.map((group) => {
+              const y = toY(group.energy);
+              const segmentGap = 10;
+              const totalWidth = 156;
+              const segmentWidth = (totalWidth - segmentGap * (group.levels.length - 1)) / group.levels.length;
+
+              return group.levels.map((level, index) => {
+                const x1 = 70 + index * (segmentWidth + segmentGap);
+                const x2 = x1 + segmentWidth;
+                const isSelected = level.n === selectedIndex;
+
+                return (
+                  <g
+                    key={level.n}
+                    className={isSelected ? 'energy-level selected' : 'energy-level'}
+                    role="button"
+                    tabIndex="0"
+                    onClick={() => onSelect(level.n)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' || event.key === ' ') onSelect(level.n);
+                    }}
+                  >
+                    <line x1={x1} y1={y} x2={x2} y2={y} />
+                    <text x={(x1 + x2) / 2} y={y - 7}>n{level.n}</text>
+                  </g>
+                );
+              });
+            })}
+          </svg>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function AnalysisControl() {
   const {
     commonState,
@@ -98,98 +209,114 @@ function AnalysisControl() {
     updateWavePacket1D,
     state2D,
     updateWavePacket2D,
+    controlState,
+    updateControlState,
   } = useSimulation();
   const [tab, setTab] = useState('position');
 
   const is2D = commonState.type === '2D';
+  const isStationary = controlState.analysisMode === 'stationary';
   const length = commonState.length;
   const halfLength = length / 2;
   const packet = is2D ? state2D.wavePacket2D : state1D.wavePacket1D;
   const updatePacket = is2D ? updateWavePacket2D : updateWavePacket1D;
+  const energyLevels = getEnergyLevels(is2D ? state2D.eigenvalues2D : state1D.eigenvalues1D);
 
   return (
     <section className="analysis-control" aria-labelledby="analysis-control-title">
       <header className="panel-header">
-        <h2 id="analysis-control-title">Evolution Settings</h2>
+        <h2 id="analysis-control-title">
+          {isStationary ? 'Stationary Settings' : 'Evolution Settings'}
+        </h2>
         <span>{is2D ? '2D' : '1D'}</span>
       </header>
 
       <div className="analysis-control-body">
-        <div className="evolution-mode-tabs" aria-label="Evolution parameter type">
-          <button
-            type="button"
-            className={tab === 'position' ? 'active' : ''}
-            onClick={() => setTab('position')}
-          >
-            Position
-          </button>
-          <button
-            type="button"
-            className={tab === 'momentum' ? 'active' : ''}
-            onClick={() => setTab('momentum')}
-          >
-            Momentum
-          </button>
-        </div>
+        {isStationary ? (
+          <StationaryLevelPicker
+            levels={energyLevels}
+            selectedIndex={controlState.targetStateIndex}
+            onSelect={(targetStateIndex) => updateControlState({ targetStateIndex })}
+          />
+        ) : (
+          <>
+            <div className="evolution-mode-tabs" aria-label="Evolution parameter type">
+              <button
+                type="button"
+                className={tab === 'position' ? 'active' : ''}
+                onClick={() => setTab('position')}
+              >
+                Position
+              </button>
+              <button
+                type="button"
+                className={tab === 'momentum' ? 'active' : ''}
+                onClick={() => setTab('momentum')}
+              >
+                Momentum
+              </button>
+            </div>
 
-        <div className={is2D ? 'evolution-editor is-2d' : 'evolution-editor'}>
-          <div className="evolution-preview-frame">
-            {is2D ? (
-              <TwoDPreview tab={tab} packet={packet} length={length} />
-            ) : (
-              <OneDPreview tab={tab} packet={packet} length={length} />
-            )}
-          </div>
+            <div className={is2D ? 'evolution-editor is-2d' : 'evolution-editor'}>
+              <div className="evolution-preview-frame">
+                {is2D ? (
+                  <TwoDPreview tab={tab} packet={packet} length={length} />
+                ) : (
+                  <OneDPreview tab={tab} packet={packet} length={length} />
+                )}
+              </div>
 
-          <div className="evolution-sliders">
-            {tab === 'position' ? (
-              <>
-                <SliderRow
-                  label="x0"
-                  min={-halfLength}
-                  max={halfLength}
-                  value={packet.x0}
-                  onChange={(value) => updatePacket({ x0: value })}
-                />
-                {is2D && (
-                  <SliderRow
-                    label="y0"
-                    min={-halfLength}
-                    max={halfLength}
-                    value={packet.y0}
-                    onChange={(value) => updatePacket({ y0: value })}
-                  />
+              <div className="evolution-sliders">
+                {tab === 'position' ? (
+                  <>
+                    <SliderRow
+                      label="x0"
+                      min={-halfLength}
+                      max={halfLength}
+                      value={packet.x0}
+                      onChange={(value) => updatePacket({ x0: value })}
+                    />
+                    {is2D && (
+                      <SliderRow
+                        label="y0"
+                        min={-halfLength}
+                        max={halfLength}
+                        value={packet.y0}
+                        onChange={(value) => updatePacket({ y0: value })}
+                      />
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <SliderRow
+                      label={is2D ? 'kx0' : 'k0'}
+                      min={-12}
+                      max={12}
+                      value={is2D ? packet.kx0 : packet.k0}
+                      onChange={(value) => updatePacket(is2D ? { kx0: value } : { k0: value })}
+                    />
+                    {is2D && (
+                      <SliderRow
+                        label="ky0"
+                        min={-12}
+                        max={12}
+                        value={packet.ky0}
+                        onChange={(value) => updatePacket({ ky0: value })}
+                      />
+                    )}
+                  </>
                 )}
-              </>
-            ) : (
-              <>
                 <SliderRow
-                  label={is2D ? 'kx0' : 'k0'}
-                  min={-12}
-                  max={12}
-                  value={is2D ? packet.kx0 : packet.k0}
-                  onChange={(value) => updatePacket(is2D ? { kx0: value } : { k0: value })}
+                  label="sigma"
+                  min={0.2}
+                  max={4}
+                  value={packet.sigma}
+                  onChange={(value) => updatePacket({ sigma: value })}
                 />
-                {is2D && (
-                  <SliderRow
-                    label="ky0"
-                    min={-12}
-                    max={12}
-                    value={packet.ky0}
-                    onChange={(value) => updatePacket({ ky0: value })}
-                  />
-                )}
-              </>
-            )}
-            <SliderRow
-              label="sigma"
-              min={0.2}
-              max={4}
-              value={packet.sigma}
-              onChange={(value) => updatePacket({ sigma: value })}
-            />
-          </div>
-        </div>
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </section>
   );
