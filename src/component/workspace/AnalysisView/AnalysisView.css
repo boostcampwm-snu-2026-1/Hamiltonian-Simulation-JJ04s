@@ -114,6 +114,16 @@
   stroke-width: 2;
 }
 
+.potential-region-layer {
+  opacity: 0.95;
+}
+
+.potential-region {
+  fill: rgba(95, 108, 118, 0.18);
+  stroke: rgba(95, 108, 118, 0.58);
+  stroke-width: 1.6;
+}
+
 .contour-line {
   fill: none;
   stroke: #4f879f;
@@ -202,7 +212,8 @@
 
 .wave-real-line,
 .wave-imaginary-line,
-.density-line {
+.density-line,
+.potential-line {
   fill: none;
   stroke-linecap: round;
   stroke-linejoin: round;
@@ -219,6 +230,16 @@
 
 .density-line {
   stroke: #174f6b;
+}
+
+.potential-line {
+  stroke: #5f6c76;
+  stroke-width: 2.4;
+}
+
+.potential-fill {
+  fill: rgba(95, 108, 118, 0.14);
+  stroke: none;
 }
 
 .density-fill {

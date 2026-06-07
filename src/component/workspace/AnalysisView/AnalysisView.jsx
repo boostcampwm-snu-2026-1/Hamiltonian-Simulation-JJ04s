@@ -1,30 +1,24 @@
 import { useMemo, useState } from 'react';
 import { useSimulation } from '../../../hook/useSimulation';
+import {
+  buildMockEvolution1DSamples,
+  buildMockHighPotentialRegions2D,
+  buildMockStationary1DSamples,
+  getMock2DContourLobes,
+} from './mockdata';
 import './AnalysisView.css';
 
-const sampleCount = 96;
-
-const buildWaveSamples = (stateIndex) => {
-  const mode = stateIndex + 1;
-
-  return Array.from({ length: sampleCount }, (_, index) => {
-    const t = index / (sampleCount - 1);
-    const centered = (t - 0.5) * 2;
-    const envelope = Math.exp(-(centered ** 2) * 0.55);
-    const real = Math.sin(mode * Math.PI * t) * envelope;
-    const imaginary = 0.36 * Math.cos(mode * Math.PI * t) * envelope;
-
-    return {
-      t,
-      real,
-      imaginary,
-      probability: real ** 2 + imaginary ** 2,
-    };
-  });
-};
+const contourDomain = { x: 32, y: 32, size: 256 };
 
 const getMinMax = (samples, keys) => {
-  const values = samples.flatMap(sample => keys.map(key => sample[key]));
+  const values = samples
+    .flatMap(sample => keys.map(key => sample[key]))
+    .filter(Number.isFinite);
+
+  if (values.length === 0) {
+    return { min: -1, max: 1 };
+  }
+
   return {
     min: Math.min(...values),
     max: Math.max(...values),
@@ -36,7 +30,8 @@ const buildPath = (samples, key, bounds, width, height, padding) => {
 
   return samples.map((sample, index) => {
     const x = padding.left + sample.t * (width - padding.left - padding.right);
-    const y = padding.top + (1 - ((sample[key] - bounds.min) / range)) * (height - padding.top - padding.bottom);
+    const value = Number.isFinite(sample[key]) ? sample[key] : 0;
+    const y = padding.top + (1 - ((value - bounds.min) / range)) * (height - padding.top - padding.bottom);
     return `${index === 0 ? 'M' : 'L'} ${x.toFixed(2)} ${y.toFixed(2)}`;
   }).join(' ');
 };
@@ -65,6 +60,35 @@ function WaveFunctionChart({ samples }) {
   );
 }
 
+function EvolutionWaveChart({ samples }) {
+  const width = 640;
+  const height = 210;
+  const padding = { top: 22, right: 22, bottom: 28, left: 42 };
+  const waveBounds = getMinMax(samples, ['real', 'imaginary']);
+  const potentialBounds = { min: 0, max: Math.max(...samples.map(sample => sample.potential), 0.001) };
+  const zeroY = padding.top + (1 - ((0 - waveBounds.min) / Math.max(waveBounds.max - waveBounds.min, 0.001)))
+    * (height - padding.top - padding.bottom);
+
+  return (
+    <svg className="analysis-chart" viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Evolution wavefunction and potential graph">
+      <line className="chart-axis" x1={padding.left} y1={zeroY} x2={width - padding.right} y2={zeroY} />
+      <line className="chart-axis vertical" x1={padding.left} y1={padding.top} x2={padding.left} y2={height - padding.bottom} />
+      <path className="potential-fill" d={`${buildPath(samples, 'potential', potentialBounds, width, height, padding)} L ${width - padding.right} ${height - padding.bottom} L ${padding.left} ${height - padding.bottom} Z`} />
+      <path className="potential-line" d={buildPath(samples, 'potential', potentialBounds, width, height, padding)} />
+      <path className="wave-real-line" d={buildPath(samples, 'real', waveBounds, width, height, padding)} />
+      <path className="wave-imaginary-line" d={buildPath(samples, 'imaginary', waveBounds, width, height, padding)} />
+      <g className="chart-legend">
+        <line className="potential-line" x1="414" y1="24" x2="444" y2="24" />
+        <text x="450" y="28">V</text>
+        <line className="wave-real-line" x1="484" y1="24" x2="514" y2="24" />
+        <text x="520" y="28">Real</text>
+        <line className="wave-imaginary-line" x1="558" y1="24" x2="588" y2="24" />
+        <text x="594" y="28">Imag</text>
+      </g>
+    </svg>
+  );
+}
+
 function ProbabilityChart({ samples }) {
   const width = 640;
   const height = 190;
@@ -86,36 +110,6 @@ function ProbabilityChart({ samples }) {
   );
 }
 
-const getContourLobes = (stateIndex, component) => {
-  const mode = stateIndex % 4;
-  const phaseOffset = component === 'imaginary' ? 20 : 0;
-
-  if (mode === 0) {
-    return [{ cx: 160, cy: 160, rx: 64, ry: 46, rotate: phaseOffset, sign: 1 }];
-  }
-
-  if (mode === 1) {
-    return [
-      { cx: 116, cy: 160, rx: 42, ry: 54, rotate: -18 + phaseOffset, sign: 1 },
-      { cx: 204, cy: 160, rx: 42, ry: 54, rotate: 18 + phaseOffset, sign: -1 },
-    ];
-  }
-
-  if (mode === 2) {
-    return [
-      { cx: 160, cy: 112, rx: 52, ry: 36, rotate: phaseOffset, sign: 1 },
-      { cx: 160, cy: 208, rx: 52, ry: 36, rotate: phaseOffset, sign: -1 },
-    ];
-  }
-
-  return [
-    { cx: 118, cy: 118, rx: 34, ry: 42, rotate: -34 + phaseOffset, sign: 1 },
-    { cx: 202, cy: 118, rx: 34, ry: 42, rotate: 34 + phaseOffset, sign: -1 },
-    { cx: 118, cy: 202, rx: 34, ry: 42, rotate: 34 + phaseOffset, sign: -1 },
-    { cx: 202, cy: 202, rx: 34, ry: 42, rotate: -34 + phaseOffset, sign: 1 },
-  ];
-};
-
 function ContourEllipse({ lobe, scale = 1, className = '' }) {
   return (
     <ellipse
@@ -129,12 +123,34 @@ function ContourEllipse({ lobe, scale = 1, className = '' }) {
   );
 }
 
-function WavefunctionContour({ stateIndex, component }) {
-  const lobes = getContourLobes(stateIndex, component);
+function PotentialRegionOverlay({ regions }) {
+  if (regions.length === 0) {
+    return null;
+  }
+
+  return (
+    <g className="potential-region-layer" aria-hidden="true">
+      {regions.map((region, index) => (
+        <rect
+          key={`${region.x}-${region.y}-${index}`}
+          className="potential-region"
+          x={contourDomain.x + region.x * contourDomain.size}
+          y={contourDomain.y + region.y * contourDomain.size}
+          width={region.width * contourDomain.size}
+          height={region.height * contourDomain.size}
+        />
+      ))}
+    </g>
+  );
+}
+
+function WavefunctionContour({ stateIndex, component, potentialRegions = [] }) {
+  const lobes = getMock2DContourLobes(stateIndex, component);
 
   return (
     <svg className="contour-chart" viewBox="0 0 320 320" role="img" aria-label="2D wavefunction contour">
       <rect className="contour-domain" x="32" y="32" width="256" height="256" />
+      <PotentialRegionOverlay regions={potentialRegions} />
       {lobes.map((lobe, index) => (
         <g key={`${lobe.cx}-${lobe.cy}-${index}`} className={lobe.sign > 0 ? 'signed-contour positive' : 'signed-contour negative'}>
           <ContourEllipse lobe={lobe} scale={1.42} className="contour-line faint" />
@@ -147,7 +163,7 @@ function WavefunctionContour({ stateIndex, component }) {
 }
 
 function ProbabilityContour({ stateIndex }) {
-  const lobes = getContourLobes(stateIndex, 'real').map(lobe => ({
+  const lobes = getMock2DContourLobes(stateIndex, 'real').map(lobe => ({
     ...lobe,
     sign: 1,
     rx: lobe.rx * 1.08,
@@ -171,8 +187,9 @@ function ProbabilityContour({ stateIndex }) {
   );
 }
 
-function Stationary2DView({ stateIndex }) {
+function Stationary2DView({ stateIndex, showPotentialRegions = false }) {
   const [component, setComponent] = useState('real');
+  const potentialRegions = showPotentialRegions ? buildMockHighPotentialRegions2D() : [];
 
   return (
     <div className="analysis-view-body stationary-2d-body">
@@ -196,7 +213,11 @@ function Stationary2DView({ stateIndex }) {
             </button>
           </div>
         </div>
-        <WavefunctionContour stateIndex={stateIndex} component={component} />
+        <WavefunctionContour
+          stateIndex={stateIndex}
+          component={component}
+          potentialRegions={potentialRegions}
+        />
       </div>
 
       <div className="analysis-graph-panel contour-panel">
@@ -212,11 +233,22 @@ function Stationary2DView({ stateIndex }) {
 
 function AnalysisView() {
   const { commonState, controlState } = useSimulation();
-  const isStationary1D = commonState.type === '1D' && controlState.analysisMode === 'stationary';
-  const isStationary2D = commonState.type === '2D' && controlState.analysisMode === 'stationary';
+  const dimension = String(commonState.type).toUpperCase();
+  const analysisMode = controlState.analysisMode;
+  const simulationTime = Number.isFinite(commonState.simulationTime)
+    ? commonState.simulationTime
+    : 0;
+  const isStationary1D = dimension === '1D' && analysisMode === 'stationary';
+  const isStationary2D = dimension === '2D' && analysisMode === 'stationary';
+  const isEvolution1D = dimension === '1D' && analysisMode === 'evolution';
+  const isEvolution2D = dimension === '2D' && analysisMode === 'evolution';
   const samples = useMemo(
-    () => buildWaveSamples(controlState.targetStateIndex),
+    () => buildMockStationary1DSamples(controlState.targetStateIndex),
     [controlState.targetStateIndex],
+  );
+  const evolutionSamples = useMemo(
+    () => buildMockEvolution1DSamples(simulationTime),
+    [simulationTime],
   );
 
   return (
@@ -246,6 +278,29 @@ function AnalysisView() {
         </div>
       ) : isStationary2D ? (
         <Stationary2DView stateIndex={controlState.targetStateIndex} />
+      ) : isEvolution1D ? (
+        <div className="analysis-view-body">
+          <div className="analysis-graph-panel wavefunction-panel">
+            <div className="analysis-graph-header">
+              <span>Wavefunction + Potential</span>
+              <strong>t = {simulationTime.toFixed(2)}</strong>
+            </div>
+            <EvolutionWaveChart samples={evolutionSamples} />
+          </div>
+
+          <div className="analysis-graph-panel probability-panel">
+            <div className="analysis-graph-header">
+              <span>Probability Density</span>
+              <strong>|psi|^2</strong>
+            </div>
+            <ProbabilityChart samples={evolutionSamples} />
+          </div>
+        </div>
+      ) : isEvolution2D ? (
+        <Stationary2DView
+          stateIndex={controlState.targetStateIndex}
+          showPotentialRegions
+        />
       ) : (
         <div className="analysis-view-empty" />
       )}
