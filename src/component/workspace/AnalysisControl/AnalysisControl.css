@@ -1,22 +1,27 @@
 .analysis-control {
   min-height: 0;
   display: grid;
-  grid-template-rows: auto 1fr;
+  grid-template-rows: auto minmax(0, 1fr);
   border: 1px solid #ccd4dc;
   border-radius: 8px;
   background: #ffffff;
   overflow: hidden;
 }
 
+.analysis-control .panel-header {
+  min-height: 38px;
+  padding: 7px 10px;
+}
+
 .analysis-control-body {
   min-height: 0;
   display: grid;
-  grid-template-rows: auto 1fr;
-  gap: 12px;
-  padding: 12px;
+  gap: 7px;
+  padding: 8px 10px 9px;
+  overflow: hidden;
 }
 
-.analysis-mode-switch {
+.energy-target-tabs {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   padding: 3px;
@@ -25,102 +30,139 @@
   background: #eef1f4;
 }
 
-.analysis-mode-switch button {
-  min-height: 34px;
+.energy-target-tabs button {
+  min-height: 26px;
   border: 0;
   border-radius: 6px;
   color: #4f5d68;
   background: transparent;
+  font-size: 0.76rem;
   font-weight: 800;
   cursor: pointer;
 }
 
-.analysis-mode-switch button.active {
+.energy-target-tabs button.active {
   color: #ffffff;
   background: #2f6f8f;
 }
 
-.analysis-settings {
+.stationary-control-grid,
+.evolution-control-grid {
   min-height: 0;
   display: grid;
-  align-content: start;
-  gap: 12px;
-}
-
-.stepper-field,
-.time-step-field {
-  display: grid;
   gap: 6px;
+  align-content: start;
 }
 
-.stepper-field > span,
-.time-step-field > span {
-  color: #65717d;
-  font-size: 0.74rem;
-  font-weight: 800;
-  text-transform: uppercase;
+.stationary-control-grid {
+  grid-template-columns: minmax(104px, 0.58fr) minmax(190px, 1.42fr);
 }
 
-.stepper-control {
+.evolution-control-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.target-state-stepper {
+  min-width: 0;
+  min-height: 28px;
   display: grid;
-  grid-template-columns: 38px minmax(0, 1fr) 38px;
+  grid-template-columns: auto 28px minmax(48px, 1fr) 28px;
   align-items: center;
-  border: 1px solid #cbd3da;
+  gap: 4px;
+  padding: 2px 4px 2px 7px;
+  border: 1px solid #d5dde4;
   border-radius: 8px;
-  overflow: hidden;
+  background: #fbfcfd;
 }
 
-.stepper-control button {
-  min-height: 38px;
-  border: 0;
+.target-state-stepper span,
+.energy-all-target span,
+.compact-number-field span {
+  color: #64717d;
+  font-size: 0.68rem;
+  font-weight: 800;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.target-state-stepper button {
+  min-width: 0;
+  min-height: 23px;
+  border: 1px solid #cbd3da;
+  border-radius: 6px;
   color: #34414c;
-  background: #f7f9fa;
-  font-size: 1rem;
+  background: #ffffff;
   font-weight: 900;
   cursor: pointer;
 }
 
-.stepper-control strong {
+.target-state-stepper strong,
+.energy-all-target strong {
   min-width: 0;
+  overflow: hidden;
   color: #1f2933;
-  font-size: 0.92rem;
+  font-size: 0.78rem;
+  font-weight: 850;
   text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.time-step-field input {
-  width: 100%;
-  min-height: 38px;
-  padding: 8px 10px;
-  border: 1px solid #cbd3da;
+.energy-all-target,
+.compact-number-field {
+  min-width: 0;
+  min-height: 28px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 6px;
+  padding: 2px 7px;
+  border: 1px solid #d5dde4;
   border-radius: 8px;
+  background: #fbfcfd;
+}
+
+.compact-number-field input {
+  min-width: 0;
+  width: 100%;
+  height: 23px;
+  padding: 2px 4px;
+  border: 1px solid #cbd3da;
+  border-radius: 6px;
   color: #182128;
   background: #ffffff;
-  font: inherit;
-  font-weight: 700;
+  font-size: 0.76rem;
+  font-weight: 750;
 }
 
-.analysis-actions {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 8px;
-}
-
-.analysis-primary-action,
-.analysis-secondary-action {
-  min-height: 38px;
+.compact-action-button {
+  min-width: 0;
+  min-height: 28px;
+  border: 1px solid #cbd3da;
   border-radius: 8px;
-  font-weight: 800;
+  color: #34414c;
+  background: #ffffff;
+  font-size: 0.76rem;
+  font-weight: 850;
   cursor: pointer;
 }
 
-.analysis-primary-action {
-  border: 1px solid #2f6f8f;
+.compact-action-button.primary {
+  border-color: #2f6f8f;
   color: #ffffff;
   background: #2f6f8f;
 }
 
-.analysis-secondary-action {
-  border: 1px solid #cbd3da;
-  color: #34414c;
-  background: #ffffff;
+@media (max-width: 1120px) {
+  .evolution-control-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 860px) {
+  .stationary-control-grid,
+  .evolution-control-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }

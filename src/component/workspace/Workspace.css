@@ -85,16 +85,25 @@ input {
   white-space: nowrap;
 }
 
-.dimension-switch {
+.dimension-switch,
+.analysis-mode-tabs {
   display: grid;
-  grid-template-columns: repeat(2, 48px);
   padding: 3px;
   border: 1px solid #cbd3da;
   border-radius: 8px;
   background: #eef1f4;
 }
 
-.dimension-switch button {
+.dimension-switch {
+  grid-template-columns: repeat(2, 48px);
+}
+
+.analysis-mode-tabs {
+  grid-template-columns: repeat(2, 86px);
+}
+
+.dimension-switch button,
+.analysis-mode-tabs button {
   min-height: 28px;
   border: 0;
   border-radius: 6px;
@@ -105,7 +114,8 @@ input {
   cursor: pointer;
 }
 
-.dimension-switch button.active {
+.dimension-switch button.active,
+.analysis-mode-tabs button.active {
   color: #ffffff;
   background: #2f6f8f;
 }
@@ -129,7 +139,23 @@ input {
   gap: 10px;
 }
 
-.workspace-canvas {
+.workspace-right-column {
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 10px;
+}
+
+.workspace-analysis-slot {
+  min-width: 0;
+  min-height: 0;
+  border: 1px solid #ccd4dc;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.workspace-left-slot {
   min-width: 0;
   min-height: 0;
   border: 1px solid #ccd4dc;
@@ -185,7 +211,7 @@ input {
     grid-template-rows: minmax(360px, auto) minmax(220px, auto);
   }
 
-  .workspace-canvas {
-    min-height: 420px;
+  .workspace-right-column {
+    grid-template-rows: auto minmax(360px, auto);
   }
 }

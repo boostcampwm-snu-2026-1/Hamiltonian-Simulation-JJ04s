@@ -1,14 +1,21 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useSimulation } from '../../../hook/useSimulation';
 import './PhysicalParameters.css';
 
 const LIMITS = {
   mass: { min: 0.001, max: 1000 },
-  length: { min: 0.1, max: 10000 },
   gridSteps: {
     min: 16,
     max1D: 4096,
     max2D: 512,
+  },
+};
+
+const SLIDER_LIMITS = {
+  mass: { min: 0.1, max: 20 },
+  gridSteps: {
+    max1D: 1024,
+    max2D: 256,
   },
 };
 
@@ -37,17 +44,6 @@ const validateMass = (value) => {
   return '';
 };
 
-const validateLength = (value) => {
-  const baseError = validateFiniteNumber(value, 'Length');
-  const numberValue = Number(value);
-
-  if (baseError) return baseError;
-  if (numberValue < LIMITS.length.min) return `Length must be at least ${LIMITS.length.min}.`;
-  if (numberValue > LIMITS.length.max) return `Length must be ${LIMITS.length.max} or less.`;
-
-  return '';
-};
-
 const validateGridSteps = (value, dimension) => {
   const baseError = validateFiniteNumber(value, 'Grid steps');
   const numberValue = Number(value);
@@ -65,42 +61,60 @@ const validateGridSteps = (value, dimension) => {
   return '';
 };
 
+const getRangeValue = (value, min, max) => {
+  const numberValue = Number(value);
+
+  if (!Number.isFinite(numberValue)) return min;
+
+  return Math.min(max, Math.max(min, numberValue));
+};
+
 function PhysicalParameters() {
   const { commonState, updateCommonState } = useSimulation();
+  const gridMax = commonState.type === '2D' ? LIMITS.gridSteps.max2D : LIMITS.gridSteps.max1D;
+  const gridSliderMax = commonState.type === '2D'
+    ? SLIDER_LIMITS.gridSteps.max2D
+    : SLIDER_LIMITS.gridSteps.max1D;
   const [draft, setDraft] = useState({
     mass: String(commonState.mass),
-    length: String(commonState.length),
     gridSteps: String(commonState.gridSteps),
   });
 
   useEffect(() => {
     setDraft({
       mass: String(commonState.mass),
-      length: String(commonState.length),
       gridSteps: String(commonState.gridSteps),
     });
-  }, [commonState.mass, commonState.length, commonState.gridSteps]);
+  }, [commonState.mass, commonState.gridSteps]);
 
-  const errors = useMemo(() => ({
-    mass: validateMass(draft.mass),
-    length: validateLength(draft.length),
-    gridSteps: validateGridSteps(draft.gridSteps, commonState.type),
-  }), [commonState.type, draft]);
+  const updateDraftParameter = (key) => (event) => {
+    setDraft(prev => ({ ...prev, [key]: event.target.value }));
+  };
 
-  const updateParameter = (key) => (event) => {
-    const value = event.target.value;
-    const nextDraft = { ...draft, [key]: value };
+  const commitParameter = (key) => {
+    const value = draft[key];
     const validators = {
       mass: validateMass,
-      length: validateLength,
       gridSteps: (nextValue) => validateGridSteps(nextValue, commonState.type),
     };
+    const fallbackValues = {
+      mass: commonState.mass,
+      gridSteps: commonState.gridSteps,
+    };
 
-    setDraft(nextDraft);
-
-    if (!validators[key](value)) {
-      updateCommonState({ [key]: Number(value) });
+    if (validators[key](value)) {
+      setDraft(prev => ({ ...prev, [key]: String(fallbackValues[key]) }));
+      return;
     }
+
+    updateCommonState({ [key]: Number(value) });
+  };
+
+  const commitOnEnter = (key) => (event) => {
+    if (event.key !== 'Enter') return;
+
+    event.currentTarget.blur();
+    commitParameter(key);
   };
 
   return (
@@ -112,60 +126,63 @@ function PhysicalParameters() {
 
       <div className="physical-parameters-body">
         <label className="parameter-field">
-          <span>Mass</span>
-          <div className="parameter-input">
+          <div className="parameter-control-row">
+            <span>Mass:</span>
             <input
+              className="parameter-number-input"
               type="number"
               min={LIMITS.mass.min}
               max={LIMITS.mass.max}
               step="0.1"
               value={draft.mass}
-              onChange={updateParameter('mass')}
-              aria-invalid={Boolean(errors.mass)}
+              onChange={updateDraftParameter('mass')}
+              onBlur={() => commitParameter('mass')}
+              onKeyDown={commitOnEnter('mass')}
             />
-            <em>m / m0</em>
+            <em className="parameter-unit">m / m0</em>
+            <input
+              className="parameter-range-input"
+              type="range"
+              min={SLIDER_LIMITS.mass.min}
+              max={SLIDER_LIMITS.mass.max}
+              step="0.1"
+              value={getRangeValue(draft.mass, SLIDER_LIMITS.mass.min, SLIDER_LIMITS.mass.max)}
+              onChange={updateDraftParameter('mass')}
+              onBlur={() => commitParameter('mass')}
+              onKeyDown={commitOnEnter('mass')}
+              aria-label="Mass slider"
+            />
           </div>
-          <small className={errors.mass ? 'visible' : ''}>
-            {errors.mass || 'No validation error.'}
-          </small>
         </label>
 
         <label className="parameter-field">
-          <span>Length</span>
-          <div className="parameter-input">
+          <div className="parameter-control-row">
+            <span>Grid:</span>
             <input
-              type="number"
-              min={LIMITS.length.min}
-              max={LIMITS.length.max}
-              step="0.5"
-              value={draft.length}
-              onChange={updateParameter('length')}
-              aria-invalid={Boolean(errors.length)}
-            />
-            <em>L / L0</em>
-          </div>
-          <small className={errors.length ? 'visible' : ''}>
-            {errors.length || 'No validation error.'}
-          </small>
-        </label>
-
-        <label className="parameter-field">
-          <span>Grid Steps</span>
-          <div className="parameter-input">
-            <input
+              className="parameter-number-input"
               type="number"
               min={LIMITS.gridSteps.min}
-              max={commonState.type === '2D' ? LIMITS.gridSteps.max2D : LIMITS.gridSteps.max1D}
+              max={gridMax}
               step="16"
               value={draft.gridSteps}
-              onChange={updateParameter('gridSteps')}
-              aria-invalid={Boolean(errors.gridSteps)}
+              onChange={updateDraftParameter('gridSteps')}
+              onBlur={() => commitParameter('gridSteps')}
+              onKeyDown={commitOnEnter('gridSteps')}
             />
-            <em>points / axis</em>
+            <em className="parameter-unit">points / axis</em>
+            <input
+              className="parameter-range-input"
+              type="range"
+              min={LIMITS.gridSteps.min}
+              max={gridSliderMax}
+              step="16"
+              value={getRangeValue(draft.gridSteps, LIMITS.gridSteps.min, gridSliderMax)}
+              onChange={updateDraftParameter('gridSteps')}
+              onBlur={() => commitParameter('gridSteps')}
+              onKeyDown={commitOnEnter('gridSteps')}
+              aria-label="Grid steps slider"
+            />
           </div>
-          <small className={errors.gridSteps ? 'visible' : ''}>
-            {errors.gridSteps || 'No validation error.'}
-          </small>
         </label>
       </div>
     </section>

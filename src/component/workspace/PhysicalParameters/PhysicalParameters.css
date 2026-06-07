@@ -1,91 +1,101 @@
 .physical-parameters {
   min-height: 0;
   display: grid;
-  grid-template-rows: auto 1fr;
+  grid-template-rows: auto auto;
+  align-self: start;
   border: 1px solid #ccd4dc;
   border-radius: 8px;
   background: #ffffff;
   overflow: hidden;
 }
 
+.physical-parameters .panel-header {
+  min-height: 32px;
+  padding: 5px 10px;
+}
+
+.physical-parameters .panel-header h2 {
+  font-size: 0.88rem;
+}
+
+.physical-parameters .panel-header span {
+  font-size: 0.68rem;
+}
+
 .physical-parameters-body {
   min-height: 0;
   display: grid;
-  align-content: start;
-  gap: 4px;
-  padding: 8px 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-content: center;
+  gap: 8px;
+  padding: 6px 10px 5px;
 }
 
 .parameter-field {
   min-width: 0;
   display: grid;
-  gap: 2px;
+  align-content: center;
+  gap: 0;
+  padding: 4px 7px;
+  border: 1px solid #d5dde4;
+  border-radius: 8px;
+  background: #fbfcfd;
 }
 
-.parameter-field > span {
-  color: #65717d;
-  font-size: 0.74rem;
-  font-weight: 800;
-  text-transform: uppercase;
-}
-
-.parameter-input {
+.parameter-control-row {
   min-width: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: auto minmax(56px, 76px) auto minmax(78px, 1fr);
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
-.parameter-input input {
+.parameter-control-row > span {
+  color: #65717d;
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.parameter-number-input {
+  min-width: 0;
   width: 100%;
-  min-height: 29px;
-  padding: 4px 8px;
+  height: 22px;
+  padding: 2px 6px;
   border: 1px solid #cbd3da;
-  border-radius: 8px;
+  border-radius: 6px;
   color: #182128;
   background: #ffffff;
   font: inherit;
+  font-size: 0.74rem;
   font-weight: 700;
 }
 
-.parameter-input input[aria-invalid="true"] {
-  border-color: #b85c38;
-  background: #fff8f5;
-}
-
-.parameter-input em {
-  min-width: 72px;
+.parameter-unit {
+  min-width: 0;
+  overflow: hidden;
   color: #5f6c76;
-  font-size: 0.74rem;
+  font-size: 0.64rem;
   font-style: normal;
   font-weight: 800;
-  white-space: nowrap;
-}
-
-.parameter-field small {
-  min-height: 14px;
-  max-width: 100%;
-  color: #9a432a;
-  font-size: 0.68rem;
-  font-weight: 700;
-  line-height: 1.1;
-  white-space: nowrap;
-  overflow: hidden;
   text-overflow: ellipsis;
-  visibility: hidden;
+  white-space: nowrap;
 }
 
-.parameter-field small.visible {
-  visibility: visible;
+.parameter-range-input {
+  min-width: 0;
+  width: 100%;
+  accent-color: #2f6f8f;
+  cursor: pointer;
 }
 
 @media (max-width: 480px) {
-  .parameter-input {
+  .physical-parameters-body {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .parameter-input em {
-    min-width: 0;
+  .parameter-control-row {
+    grid-template-columns: auto minmax(68px, 88px) auto minmax(0, 1fr);
   }
 }

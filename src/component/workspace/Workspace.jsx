@@ -4,7 +4,12 @@ import PotentialEditor from './PotentialEditor/PotentialEditor';
 import './Workspace.css';
 
 function Workspace() {
-  const { commonState, updateCommonState, controlState } = useSimulation();
+  const {
+    commonState,
+    updateCommonState,
+    controlState,
+    updateControlState,
+  } = useSimulation();
 
   return (
     <main className="workspace-shell">
@@ -31,9 +36,22 @@ function Workspace() {
               2D
             </button>
           </div>
-          <span>Mass {commonState.mass}</span>
-          <span>Grid {commonState.gridSteps}</span>
-          <span>{controlState.analysisMode}</span>
+          <div className="analysis-mode-tabs" aria-label="Analysis mode">
+            <button
+              type="button"
+              className={controlState.analysisMode === 'stationary' ? 'active' : ''}
+              onClick={() => updateControlState({ analysisMode: 'stationary' })}
+            >
+              Stationary
+            </button>
+            <button
+              type="button"
+              className={controlState.analysisMode === 'evolution' ? 'active' : ''}
+              onClick={() => updateControlState({ analysisMode: 'evolution' })}
+            >
+              Evolution
+            </button>
+          </div>
           <span>{commonState.isCalculating ? 'Calculating' : 'Idle'}</span>
         </div>
       </header>
@@ -41,10 +59,13 @@ function Workspace() {
       <section className="workspace-base" aria-label="Simulation workspace base">
         <div className="workspace-left-column">
           <PotentialEditor />
-          <PhysicalParameters />
+          <div className="workspace-left-slot" aria-label="Reserved lower-left workspace" />
         </div>
 
-        <div className="workspace-canvas" />
+        <div className="workspace-right-column">
+          <PhysicalParameters />
+          <div className="workspace-analysis-slot" aria-label="Analysis workspace" />
+        </div>
       </section>
     </main>
   );
