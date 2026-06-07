@@ -133,21 +133,6 @@ function PotentialDraw1D() {
                 ))}
             </div>
 
-            <div className="interval-grid">
-                {potential.map((_, index) => (
-                    <span
-                        key={index}
-                        className={[
-                            'interval-tick',
-                            valueToClassName(potential[index]),
-                            isSelected(index) ? 'selected' : '',
-                        ].filter(Boolean).join(' ')}
-                    />
-                ))}
-            </div>
-
-            <div className="interval-axis-x">x</div>
-
             <div className="value-strip interval-value-strip">
                 <span>V</span>
                 <input
