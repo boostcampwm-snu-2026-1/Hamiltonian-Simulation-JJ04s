@@ -1,0 +1,126 @@
+.analysis-control {
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  border: 1px solid #ccd4dc;
+  border-radius: 8px;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.analysis-control-body {
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: 12px;
+  padding: 12px;
+}
+
+.analysis-mode-switch {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding: 3px;
+  border: 1px solid #cbd3da;
+  border-radius: 8px;
+  background: #eef1f4;
+}
+
+.analysis-mode-switch button {
+  min-height: 34px;
+  border: 0;
+  border-radius: 6px;
+  color: #4f5d68;
+  background: transparent;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.analysis-mode-switch button.active {
+  color: #ffffff;
+  background: #2f6f8f;
+}
+
+.analysis-settings {
+  min-height: 0;
+  display: grid;
+  align-content: start;
+  gap: 12px;
+}
+
+.stepper-field,
+.time-step-field {
+  display: grid;
+  gap: 6px;
+}
+
+.stepper-field > span,
+.time-step-field > span {
+  color: #65717d;
+  font-size: 0.74rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.stepper-control {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) 38px;
+  align-items: center;
+  border: 1px solid #cbd3da;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.stepper-control button {
+  min-height: 38px;
+  border: 0;
+  color: #34414c;
+  background: #f7f9fa;
+  font-size: 1rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.stepper-control strong {
+  min-width: 0;
+  color: #1f2933;
+  font-size: 0.92rem;
+  text-align: center;
+}
+
+.time-step-field input {
+  width: 100%;
+  min-height: 38px;
+  padding: 8px 10px;
+  border: 1px solid #cbd3da;
+  border-radius: 8px;
+  color: #182128;
+  background: #ffffff;
+  font: inherit;
+  font-weight: 700;
+}
+
+.analysis-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 8px;
+}
+
+.analysis-primary-action,
+.analysis-secondary-action {
+  min-height: 38px;
+  border-radius: 8px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.analysis-primary-action {
+  border: 1px solid #2f6f8f;
+  color: #ffffff;
+  background: #2f6f8f;
+}
+
+.analysis-secondary-action {
+  border: 1px solid #cbd3da;
+  color: #34414c;
+  background: #ffffff;
+}

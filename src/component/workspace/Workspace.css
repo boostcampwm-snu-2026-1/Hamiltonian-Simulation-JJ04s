@@ -111,6 +111,7 @@ input {
 }
 
 .workspace-base {
+  height: calc(100vh - 66px);
   min-height: 0;
   display: grid;
   grid-template-columns: minmax(300px, 0.82fr) minmax(420px, 1.42fr);
@@ -122,15 +123,15 @@ input {
 
 .workspace-left-column {
   min-width: 0;
-  min-height: 670px;
+  min-height: 0;
   display: grid;
-  grid-template-rows: minmax(470px, 2fr) minmax(190px, 0.82fr);
+  grid-template-rows: minmax(0, 1.25fr) minmax(0, 0.9fr);
   gap: 10px;
 }
 
 .workspace-canvas {
   min-width: 0;
-  min-height: 670px;
+  min-height: 0;
   border: 1px solid #ccd4dc;
   border-radius: 8px;
   background: #ffffff;
@@ -163,21 +164,6 @@ input {
   text-transform: uppercase;
 }
 
-.analysis-placeholder {
-  min-height: 0;
-  display: grid;
-  grid-template-rows: auto 1fr;
-  border: 1px solid #ccd4dc;
-  border-radius: 8px;
-  background: #ffffff;
-  overflow: hidden;
-}
-
-.placeholder-body {
-  min-height: 140px;
-  background: #ffffff;
-}
-
 @media (max-width: 860px) {
   .workspace-topbar {
     align-items: stretch;
@@ -189,13 +175,14 @@ input {
   }
 
   .workspace-base {
+    height: auto;
     grid-template-columns: minmax(0, 1fr);
     padding: 14px;
   }
 
   .workspace-left-column {
     min-height: 0;
-    grid-template-rows: minmax(470px, auto) minmax(180px, auto);
+    grid-template-rows: minmax(360px, auto) minmax(220px, auto);
   }
 
   .workspace-canvas {

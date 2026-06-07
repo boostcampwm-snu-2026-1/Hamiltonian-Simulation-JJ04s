@@ -1,0 +1,91 @@
+.physical-parameters {
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  border: 1px solid #ccd4dc;
+  border-radius: 8px;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.physical-parameters-body {
+  min-height: 0;
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  padding: 8px 10px;
+}
+
+.parameter-field {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.parameter-field > span {
+  color: #65717d;
+  font-size: 0.74rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.parameter-input {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.parameter-input input {
+  width: 100%;
+  min-height: 29px;
+  padding: 4px 8px;
+  border: 1px solid #cbd3da;
+  border-radius: 8px;
+  color: #182128;
+  background: #ffffff;
+  font: inherit;
+  font-weight: 700;
+}
+
+.parameter-input input[aria-invalid="true"] {
+  border-color: #b85c38;
+  background: #fff8f5;
+}
+
+.parameter-input em {
+  min-width: 72px;
+  color: #5f6c76;
+  font-size: 0.74rem;
+  font-style: normal;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.parameter-field small {
+  min-height: 14px;
+  max-width: 100%;
+  color: #9a432a;
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1.1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  visibility: hidden;
+}
+
+.parameter-field small.visible {
+  visibility: visible;
+}
+
+@media (max-width: 480px) {
+  .parameter-input {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .parameter-input em {
+    min-width: 0;
+  }
+}
