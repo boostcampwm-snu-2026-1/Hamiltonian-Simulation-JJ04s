@@ -1,3 +1,4 @@
+import React from 'react';
 import { useSimulation } from '../../../hook/useSimulation';
 import PotentialDraw1D from './PotentialDraw1D';
 import './PotentialEditor.css';

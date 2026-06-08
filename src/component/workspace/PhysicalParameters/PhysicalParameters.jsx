@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useSimulation } from '../../../hook/useSimulation';
+import { parsePotential1D } from '../../../utils/math-parser';
 import './PhysicalParameters.css';
 
 const LIMITS = {
@@ -69,8 +70,41 @@ const getRangeValue = (value, min, max) => {
   return Math.min(max, Math.max(min, numberValue));
 };
 
+const resampleArray1D = (values, nextLength) => {
+  if (!Array.isArray(values) || values.length === 0) {
+    return Array.from({ length: nextLength }, () => 0);
+  }
+
+  if (values.length === nextLength) {
+    return values;
+  }
+
+  if (nextLength === 1) {
+    return [Number.isFinite(values[0]) ? values[0] : 0];
+  }
+
+  const lastSourceIndex = Math.max(values.length - 1, 1);
+  const lastTargetIndex = nextLength - 1;
+
+  return Array.from({ length: nextLength }, (_, index) => {
+    const sourceIndex = (index / lastTargetIndex) * lastSourceIndex;
+    const leftIndex = Math.floor(sourceIndex);
+    const rightIndex = Math.min(values.length - 1, leftIndex + 1);
+    const ratio = sourceIndex - leftIndex;
+    const leftValue = Number.isFinite(values[leftIndex]) ? values[leftIndex] : 0;
+    const rightValue = Number.isFinite(values[rightIndex]) ? values[rightIndex] : leftValue;
+
+    return leftValue * (1 - ratio) + rightValue * ratio;
+  });
+};
+
 function PhysicalParameters() {
-  const { commonState, updateCommonState } = useSimulation();
+  const {
+    commonState,
+    updateCommonState,
+    state1D,
+    updateState1D,
+  } = useSimulation();
   const gridMax = commonState.type === '2D' ? LIMITS.gridSteps.max2D : LIMITS.gridSteps.max1D;
   const gridSliderMax = commonState.type === '2D'
     ? SLIDER_LIMITS.gridSteps.max2D
@@ -107,7 +141,31 @@ function PhysicalParameters() {
       return;
     }
 
-    updateCommonState({ [key]: Number(value) });
+    const nextValue = Number(value);
+
+    if (key !== 'gridSteps') {
+      updateCommonState({ [key]: nextValue });
+      return;
+    }
+
+    let potentialArray1D = resampleArray1D(state1D.potentialArray1D, nextValue);
+
+    if (commonState.type === '1D' && state1D.potentialRaw1D.trim() !== '') {
+      try {
+        potentialArray1D = parsePotential1D(state1D.potentialRaw1D, {
+          length: commonState.length,
+          gridSteps: nextValue,
+        });
+      } catch {
+        potentialArray1D = resampleArray1D(state1D.potentialArray1D, nextValue);
+      }
+    }
+
+    updateCommonState({ gridSteps: nextValue });
+
+    if (commonState.type === '1D') {
+      updateState1D({ potentialArray1D });
+    }
   };
 
   const commitOnEnter = (key) => (event) => {

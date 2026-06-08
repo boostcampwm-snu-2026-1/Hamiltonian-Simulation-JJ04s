@@ -1,3 +1,4 @@
+import React from 'react';
 import { useSimulation } from '../../hook/useSimulation';
 import AnalysisControl from './AnalysisControl/AnalysisControl';
 import AnalysisView from './AnalysisView/AnalysisView';
