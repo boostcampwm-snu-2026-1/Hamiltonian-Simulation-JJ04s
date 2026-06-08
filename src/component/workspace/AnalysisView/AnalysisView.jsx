@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useSimulation } from '../../../hook/useSimulation';
 import {
-  buildMockEvolution1DSamples,
   buildMockHighPotentialRegions2D,
   getMock2DContourLobes,
 } from './mockdata';
@@ -35,23 +34,85 @@ const buildPath = (samples, key, bounds, width, height, padding) => {
   }).join(' ');
 };
 
-const buildStationary1DSamples = (eigenstate) => {
-  if (!Array.isArray(eigenstate) || eigenstate.length === 0) {
-    return [];
+const toFiniteNumber = (value, fallback = 0) => (
+  Number.isFinite(value) ? value : fallback
+);
+
+const readComplexSample = (value) => {
+  if (typeof value === 'number') {
+    return { real: value, imaginary: 0 };
   }
 
-  const denominator = Math.max(eigenstate.length - 1, 1);
+  if (Array.isArray(value)) {
+    return {
+      real: toFiniteNumber(value[0]),
+      imaginary: toFiniteNumber(value[1]),
+    };
+  }
 
-  return eigenstate.map((value, index) => {
-    const real = Number.isFinite(value) ? value : 0;
+  if (value && typeof value === 'object') {
+    return {
+      real: toFiniteNumber(value.real ?? value.re),
+      imaginary: toFiniteNumber(value.imaginary ?? value.im),
+    };
+  }
+
+  return { real: 0, imaginary: 0 };
+};
+
+const buildWaveSamples1D = (wavefunction, potentialArray = []) => {
+  if (!Array.isArray(wavefunction) || wavefunction.length === 0) return [];
+
+  const denominator = Math.max(wavefunction.length - 1, 1);
+
+  return wavefunction.map((value, index) => {
+    const { real, imaginary } = readComplexSample(value);
 
     return {
       t: index / denominator,
       real,
-      imaginary: 0,
-      probability: real * real,
+      imaginary,
+      potential: toFiniteNumber(potentialArray[index]),
+      probability: real * real + imaginary * imaginary,
     };
   });
+};
+
+const buildInitialWavePacketSamples1D = ({
+  length,
+  gridSteps,
+  packet,
+  potentialArray = [],
+}) => {
+  if (!packet || gridSteps <= 0 || length <= 0) return [];
+
+  const denominator = Math.max(gridSteps - 1, 1);
+  const dx = length / denominator;
+  const sigma = Math.max(toFiniteNumber(packet.sigma, 1), 0.001);
+  const rawSamples = Array.from({ length: gridSteps }, (_, index) => {
+    const x = -length / 2 + index * dx;
+    const centeredX = x - toFiniteNumber(packet.x0);
+    const envelope = Math.exp(-(centeredX * centeredX) / (2 * sigma * sigma));
+    const phase = toFiniteNumber(packet.k0) * centeredX;
+
+    return {
+      real: envelope * Math.cos(phase),
+      imaginary: envelope * Math.sin(phase),
+    };
+  });
+  const norm = Math.sqrt(
+    rawSamples.reduce((sum, sample) => (
+      sum + (sample.real * sample.real + sample.imaginary * sample.imaginary) * dx
+    ), 0)
+  );
+  const normalizedSamples = Number.isFinite(norm) && norm > 0
+    ? rawSamples.map(sample => ({
+      real: sample.real / norm,
+      imaginary: sample.imaginary / norm,
+    }))
+    : rawSamples;
+
+  return buildWaveSamples1D(normalizedSamples, potentialArray);
 };
 
 function WaveFunctionChart({ samples }) {
@@ -83,7 +144,7 @@ function EvolutionWaveChart({ samples }) {
   const height = 210;
   const padding = { top: 22, right: 22, bottom: 28, left: 42 };
   const waveBounds = getMinMax(samples, ['real', 'imaginary']);
-  const potentialBounds = { min: 0, max: Math.max(...samples.map(sample => sample.potential), 0.001) };
+  const potentialBounds = getMinMax(samples, ['potential']);
   const zeroY = padding.top + (1 - ((0 - waveBounds.min) / Math.max(waveBounds.max - waveBounds.min, 0.001)))
     * (height - padding.top - padding.bottom);
 
@@ -111,7 +172,8 @@ function ProbabilityChart({ samples }) {
   const width = 640;
   const height = 190;
   const padding = { top: 18, right: 22, bottom: 28, left: 42 };
-  const bounds = { min: 0, max: Math.max(...samples.map(sample => sample.probability), 0.001) };
+  const probabilityValues = samples.map(sample => sample.probability).filter(Number.isFinite);
+  const bounds = { min: 0, max: Math.max(...probabilityValues, 0.001) };
   const path = buildPath(samples, 'probability', bounds, width, height, padding);
   const floorY = height - padding.bottom;
   const firstX = padding.left;
@@ -261,14 +323,40 @@ function AnalysisView() {
   const isEvolution1D = dimension === '1D' && analysisMode === 'evolution';
   const isEvolution2D = dimension === '2D' && analysisMode === 'evolution';
   const stationary1DSamples = useMemo(
-    () => buildStationary1DSamples(state1D.eigenstate1D[controlState.targetStateIndex]),
-    [state1D.eigenstate1D, controlState.targetStateIndex],
+    () => buildWaveSamples1D(
+      state1D.eigenstate1D[controlState.targetStateIndex],
+      state1D.potentialArray1D,
+    ),
+    [state1D.eigenstate1D, state1D.potentialArray1D, controlState.targetStateIndex],
   );
   const hasStationary1DResult = stationary1DSamples.length > 0;
   const evolutionSamples = useMemo(
-    () => buildMockEvolution1DSamples(simulationTime),
-    [simulationTime],
+    () => {
+      const currentSamples = buildWaveSamples1D(
+        state1D.currentPsi1D,
+        state1D.potentialArray1D,
+      );
+
+      if (currentSamples.length > 0) {
+        return currentSamples;
+      }
+
+      return buildInitialWavePacketSamples1D({
+        length: commonState.length,
+        gridSteps: commonState.gridSteps,
+        packet: state1D.wavePacket1D,
+        potentialArray: state1D.potentialArray1D,
+      });
+    },
+    [
+      state1D.currentPsi1D,
+      state1D.potentialArray1D,
+      state1D.wavePacket1D,
+      commonState.length,
+      commonState.gridSteps,
+    ],
   );
+  const hasEvolution1DResult = evolutionSamples.length > 0;
 
   return (
     <section className="analysis-view" aria-labelledby="analysis-view-title">
@@ -306,22 +394,30 @@ function AnalysisView() {
       ) : isStationary2D ? (
         <Stationary2DView stateIndex={controlState.targetStateIndex} />
       ) : isEvolution1D ? (
-        <div className="analysis-view-body">
-          <div className="analysis-graph-panel wavefunction-panel">
-            <div className="analysis-graph-header">
-              <span>Wavefunction + Potential</span>
-              <strong>t = {simulationTime.toFixed(2)}</strong>
-            </div>
-            <EvolutionWaveChart samples={evolutionSamples} />
-          </div>
+        <div className={hasEvolution1DResult ? 'analysis-view-body' : 'analysis-view-body is-empty'}>
+          {hasEvolution1DResult ? (
+            <>
+              <div className="analysis-graph-panel wavefunction-panel">
+                <div className="analysis-graph-header">
+                  <span>Wavefunction + Potential</span>
+                  <strong>t = {simulationTime.toFixed(2)}</strong>
+                </div>
+                <EvolutionWaveChart samples={evolutionSamples} />
+              </div>
 
-          <div className="analysis-graph-panel probability-panel">
-            <div className="analysis-graph-header">
-              <span>Probability Density</span>
-              <strong>|psi|^2</strong>
+              <div className="analysis-graph-panel probability-panel">
+                <div className="analysis-graph-header">
+                  <span>Probability Density</span>
+                  <strong>|psi|^2</strong>
+                </div>
+                <ProbabilityChart samples={evolutionSamples} />
+              </div>
+            </>
+          ) : (
+            <div className="analysis-result-empty">
+              No wavefunction samples available.
             </div>
-            <ProbabilityChart samples={evolutionSamples} />
-          </div>
+          )}
         </div>
       ) : isEvolution2D ? (
         <Stationary2DView
