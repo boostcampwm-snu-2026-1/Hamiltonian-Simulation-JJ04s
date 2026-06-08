@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useSimulation } from '../../../hook/useSimulation';
 import { solveStationary1D } from '../../../equation-solvers/stationary-1d';
 import './AnalysisControl.css';

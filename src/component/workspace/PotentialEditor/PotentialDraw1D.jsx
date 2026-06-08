@@ -1,5 +1,5 @@
+import React, { useState } from "react";
 import { useSimulation } from "../../../hook/useSimulation";
-import { useState } from "react";
 
 function PotentialDraw1D() {
     const { commonState, state1D, updateState1D } = useSimulation();
