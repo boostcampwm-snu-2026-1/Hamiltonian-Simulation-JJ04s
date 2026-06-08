@@ -1,19 +1,11 @@
 import { useState } from 'react';
 import { useSimulation } from '../../../hook/useSimulation';
+import { solveStationary1D } from '../../../equation-solvers/stationary-1d';
 import './AnalysisControl.css';
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 
 const formatValue = (value) => Number(value).toFixed(2);
-
-const fallbackEnergyLevels = [
-  { n: 0, energy: 0.7 },
-  { n: 1, energy: 1.8 },
-  { n: 2, energy: 3.2 },
-  { n: 3, energy: 3.2 },
-  { n: 4, energy: 5.1 },
-  { n: 5, energy: 6.9 },
-];
 
 const getPositionPercent = (value, length) => {
   const halfLength = length / 2;
@@ -22,10 +14,10 @@ const getPositionPercent = (value, length) => {
 
 const getEnergyLevels = (eigenvalues) => {
   if (!Array.isArray(eigenvalues) || eigenvalues.length === 0) {
-    return fallbackEnergyLevels;
+    return [];
   }
 
-  return eigenvalues.slice(0, 8).map((energy, index) => ({
+  return eigenvalues.slice(0, 6).map((energy, index) => ({
     n: index,
     energy,
   }));
@@ -128,12 +120,22 @@ function TwoDPreview({ tab, packet, length }) {
   );
 }
 
-function StationaryLevelPicker({ levels, selectedIndex, onSelect }) {
-  const minEnergy = Math.min(...levels.map(level => level.energy));
-  const maxEnergy = Math.max(...levels.map(level => level.energy));
+function StationaryLevelPicker({
+  levels,
+  selectedIndex,
+  onSelect,
+  onCalculate,
+  isCalculating,
+  canCalculate,
+}) {
+  const hasLevels = levels.length > 0;
+  const minEnergy = hasLevels ? Math.min(...levels.map(level => level.energy)) : 0;
+  const maxEnergy = hasLevels ? Math.max(...levels.map(level => level.energy)) : 1;
   const range = Math.max(maxEnergy - minEnergy, 1);
-  const selectedLevel = levels.find(level => level.n === selectedIndex) ?? levels[0];
-  const selectedSliderIndex = Math.max(0, levels.findIndex(level => level.n === selectedLevel.n));
+  const selectedLevel = hasLevels ? levels.find(level => level.n === selectedIndex) ?? levels[0] : null;
+  const selectedSliderIndex = hasLevels
+    ? Math.max(0, levels.findIndex(level => level.n === selectedLevel.n))
+    : -1;
   const groups = getEnergyGroups(levels);
   const toY = (energy) => 152 - ((energy - minEnergy) / range) * 116;
 
@@ -141,8 +143,15 @@ function StationaryLevelPicker({ levels, selectedIndex, onSelect }) {
     <div className="stationary-editor">
       <div className="stationary-selected-readout">
         <span>Selected</span>
-        <strong>n = {selectedLevel.n}</strong>
-        <em>E = {formatValue(selectedLevel.energy)}</em>
+        <strong>n = {selectedLevel ? selectedLevel.n : '-'}</strong>
+        <em>E = {selectedLevel ? formatValue(selectedLevel.energy) : '--'}</em>
+        <button
+          type="button"
+          onClick={onCalculate}
+          disabled={!canCalculate || isCalculating}
+        >
+          {isCalculating ? 'Calculating' : 'Calculate'}
+        </button>
       </div>
 
       <div className="stationary-level-layout">
@@ -160,42 +169,48 @@ function StationaryLevelPicker({ levels, selectedIndex, onSelect }) {
               </button>
             ))}
           </div>
-          <strong>n = {selectedLevel.n}</strong>
+          <strong>n = {selectedLevel ? selectedLevel.n : '-'}</strong>
         </div>
 
         <div className="energy-level-frame">
-          <svg className="energy-level-chart" viewBox="0 0 280 180" role="img" aria-label="Stationary energy level picker">
-            <line className="energy-axis" x1="46" y1="28" x2="46" y2="158" />
-            <text className="energy-axis-label" x="16" y="34">E</text>
-            {groups.map((group) => {
-              const y = toY(group.energy);
-              const segmentGap = 10;
-              const totalWidth = 156;
-              const segmentWidth = (totalWidth - segmentGap * (group.levels.length - 1)) / group.levels.length;
+          {hasLevels ? (
+            <svg className="energy-level-chart" viewBox="0 0 280 180" role="img" aria-label="Stationary energy level picker">
+              <line className="energy-axis" x1="46" y1="28" x2="46" y2="158" />
+              <text className="energy-axis-label" x="16" y="34">E</text>
+              {groups.map((group) => {
+                const y = toY(group.energy);
+                const segmentGap = 10;
+                const totalWidth = 156;
+                const segmentWidth = (totalWidth - segmentGap * (group.levels.length - 1)) / group.levels.length;
 
-              return group.levels.map((level, index) => {
-                const x1 = 70 + index * (segmentWidth + segmentGap);
-                const x2 = x1 + segmentWidth;
-                const isSelected = level.n === selectedIndex;
+                return group.levels.map((level, index) => {
+                  const x1 = 70 + index * (segmentWidth + segmentGap);
+                  const x2 = x1 + segmentWidth;
+                  const isSelected = level.n === selectedIndex;
 
-                return (
-                  <g
-                    key={level.n}
-                    className={isSelected ? 'energy-level selected' : 'energy-level'}
-                    role="button"
-                    tabIndex="0"
-                    onClick={() => onSelect(level.n)}
-                    onKeyDown={(event) => {
-                      if (event.key === 'Enter' || event.key === ' ') onSelect(level.n);
-                    }}
-                  >
-                    <line x1={x1} y1={y} x2={x2} y2={y} />
-                    <text x={(x1 + x2) / 2} y={y - 7}>n{level.n}</text>
-                  </g>
-                );
-              });
-            })}
-          </svg>
+                  return (
+                    <g
+                      key={level.n}
+                      className={isSelected ? 'energy-level selected' : 'energy-level'}
+                      role="button"
+                      tabIndex="0"
+                      onClick={() => onSelect(level.n)}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter' || event.key === ' ') onSelect(level.n);
+                      }}
+                    >
+                      <line x1={x1} y1={y} x2={x2} y2={y} />
+                      <text x={(x1 + x2) / 2} y={y - 7}>n{level.n}</text>
+                    </g>
+                  );
+                });
+              })}
+            </svg>
+          ) : (
+            <div className="energy-level-empty">
+              No calculated energy levels
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -207,6 +222,7 @@ function AnalysisControl() {
     commonState,
     updateCommonState,
     state1D,
+    updateState1D,
     updateWavePacket1D,
     state2D,
     updateWavePacket2D,
@@ -224,6 +240,50 @@ function AnalysisControl() {
   const energyLevels = getEnergyLevels(is2D ? state2D.eigenvalues2D : state1D.eigenvalues1D);
   const stopEvolution = () => updateCommonState({ isSimulating: false });
   const resetEvolution = () => updateCommonState({ isSimulating: false, simulationTime: 0 });
+  const calculateStationary1D = () => {
+    if (is2D || !isStationary || commonState.isCalculating) return;
+
+    updateCommonState({ isCalculating: true });
+
+    window.setTimeout(() => {
+      try {
+        const { eigenvalues, eigenstates } = solveStationary1D({
+          mass: commonState.mass,
+          length: commonState.length,
+          gridSteps: commonState.gridSteps,
+          potentialArray: state1D.potentialArray1D,
+          stateCount: 6,
+        });
+
+        updateState1D({
+          eigenvalues1D: eigenvalues,
+          eigenstate1D: eigenstates,
+        });
+        updateControlState((previousControlState) => {
+          const lastStateIndex = eigenvalues.length - 1;
+
+          if (lastStateIndex < 0) {
+            return { targetStateIndex: 0 };
+          }
+
+          if (previousControlState.targetStateIndex > lastStateIndex) {
+            return { targetStateIndex: lastStateIndex };
+          }
+
+          return {};
+        });
+      } catch (error) {
+        console.error(error);
+        updateState1D({
+          eigenvalues1D: [],
+          eigenstate1D: [],
+        });
+        updateControlState({ targetStateIndex: 0 });
+      } finally {
+        updateCommonState({ isCalculating: false });
+      }
+    }, 0);
+  };
 
   return (
     <section className="analysis-control" aria-labelledby="analysis-control-title">
@@ -240,6 +300,9 @@ function AnalysisControl() {
             levels={energyLevels}
             selectedIndex={controlState.targetStateIndex}
             onSelect={(targetStateIndex) => updateControlState({ targetStateIndex })}
+            onCalculate={calculateStationary1D}
+            isCalculating={commonState.isCalculating}
+            canCalculate={!is2D}
           />
         ) : (
           <>

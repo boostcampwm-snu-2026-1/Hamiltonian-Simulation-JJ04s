@@ -6,7 +6,7 @@ const LIMITS = {
   mass: { min: 0.001, max: 1000 },
   gridSteps: {
     min: 16,
-    max1D: 4096,
+    max1D: 128,
     max2D: 512,
   },
 };
@@ -14,7 +14,7 @@ const LIMITS = {
 const SLIDER_LIMITS = {
   mass: { min: 0.1, max: 20 },
   gridSteps: {
-    max1D: 1024,
+    max1D: 128,
     max2D: 256,
   },
 };

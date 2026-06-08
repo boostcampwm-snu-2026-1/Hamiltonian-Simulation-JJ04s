@@ -1,4 +1,5 @@
 import React, { createContext, useCallback, useState, useMemo } from 'react';
+import { buildFreeStationary1D } from '../equation-solvers/stationary-1d';
 
 export const SimulationContext = createContext(null);
 
@@ -85,7 +86,7 @@ const initialCommonState = {
   type: '1D',
   mass: 1.0,
   length: 10.0,
-  gridSteps: 512,
+  gridSteps: 64,
   timeStep: 0.1,
   potentialMode: 'draw',
   isCalculating: false,
@@ -94,13 +95,20 @@ const initialCommonState = {
   isValidTesting: false,
 };
 
+const initialStationary1D = buildFreeStationary1D({
+  mass: initialCommonState.mass,
+  length: initialCommonState.length,
+  gridSteps: initialCommonState.gridSteps,
+  stateCount: 6,
+});
+
 /** @type {SimulationState1D} */
 const initialState1D = {
   potentialRaw1D: '',
-  potentialArray1D: [],
+  potentialArray1D: Array.from({ length: initialCommonState.gridSteps }, () => 0),
   wavePacket1D: { x0: 0, k0: 5, sigma: 1 },
-  eigenvalues1D: [],
-  eigenstate1D: [],
+  eigenvalues1D: initialStationary1D.eigenvalues,
+  eigenstate1D: initialStationary1D.eigenstates,
   currentPsi1D: [],
 };
 

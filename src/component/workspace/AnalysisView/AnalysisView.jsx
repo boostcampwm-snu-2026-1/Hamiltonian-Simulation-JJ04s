@@ -3,7 +3,6 @@ import { useSimulation } from '../../../hook/useSimulation';
 import {
   buildMockEvolution1DSamples,
   buildMockHighPotentialRegions2D,
-  buildMockStationary1DSamples,
   getMock2DContourLobes,
 } from './mockdata';
 import './AnalysisView.css';
@@ -34,6 +33,25 @@ const buildPath = (samples, key, bounds, width, height, padding) => {
     const y = padding.top + (1 - ((value - bounds.min) / range)) * (height - padding.top - padding.bottom);
     return `${index === 0 ? 'M' : 'L'} ${x.toFixed(2)} ${y.toFixed(2)}`;
   }).join(' ');
+};
+
+const buildStationary1DSamples = (eigenstate) => {
+  if (!Array.isArray(eigenstate) || eigenstate.length === 0) {
+    return [];
+  }
+
+  const denominator = Math.max(eigenstate.length - 1, 1);
+
+  return eigenstate.map((value, index) => {
+    const real = Number.isFinite(value) ? value : 0;
+
+    return {
+      t: index / denominator,
+      real,
+      imaginary: 0,
+      probability: real * real,
+    };
+  });
 };
 
 function WaveFunctionChart({ samples }) {
@@ -232,7 +250,7 @@ function Stationary2DView({ stateIndex, showPotentialRegions = false }) {
 }
 
 function AnalysisView() {
-  const { commonState, controlState } = useSimulation();
+  const { commonState, state1D, controlState } = useSimulation();
   const dimension = String(commonState.type).toUpperCase();
   const analysisMode = controlState.analysisMode;
   const simulationTime = Number.isFinite(commonState.simulationTime)
@@ -242,10 +260,11 @@ function AnalysisView() {
   const isStationary2D = dimension === '2D' && analysisMode === 'stationary';
   const isEvolution1D = dimension === '1D' && analysisMode === 'evolution';
   const isEvolution2D = dimension === '2D' && analysisMode === 'evolution';
-  const samples = useMemo(
-    () => buildMockStationary1DSamples(controlState.targetStateIndex),
-    [controlState.targetStateIndex],
+  const stationary1DSamples = useMemo(
+    () => buildStationary1DSamples(state1D.eigenstate1D[controlState.targetStateIndex]),
+    [state1D.eigenstate1D, controlState.targetStateIndex],
   );
+  const hasStationary1DResult = stationary1DSamples.length > 0;
   const evolutionSamples = useMemo(
     () => buildMockEvolution1DSamples(simulationTime),
     [simulationTime],
@@ -259,22 +278,30 @@ function AnalysisView() {
       </header>
 
       {isStationary1D ? (
-        <div className="analysis-view-body">
-          <div className="analysis-graph-panel wavefunction-panel">
-            <div className="analysis-graph-header">
-              <span>Wavefunction</span>
-              <strong>n = {controlState.targetStateIndex}</strong>
-            </div>
-            <WaveFunctionChart samples={samples} />
-          </div>
+        <div className={hasStationary1DResult ? 'analysis-view-body' : 'analysis-view-body is-empty'}>
+          {hasStationary1DResult ? (
+            <>
+              <div className="analysis-graph-panel wavefunction-panel">
+                <div className="analysis-graph-header">
+                  <span>Wavefunction</span>
+                  <strong>n = {controlState.targetStateIndex}</strong>
+                </div>
+                <WaveFunctionChart samples={stationary1DSamples} />
+              </div>
 
-          <div className="analysis-graph-panel probability-panel">
-            <div className="analysis-graph-header">
-              <span>Probability Density</span>
-              <strong>|psi|^2</strong>
+              <div className="analysis-graph-panel probability-panel">
+                <div className="analysis-graph-header">
+                  <span>Probability Density</span>
+                  <strong>|psi|^2</strong>
+                </div>
+                <ProbabilityChart samples={stationary1DSamples} />
+              </div>
+            </>
+          ) : (
+            <div className="analysis-result-empty">
+              Calculate stationary states to show wavefunction and probability density.
             </div>
-            <ProbabilityChart samples={samples} />
-          </div>
+          )}
         </div>
       ) : isStationary2D ? (
         <Stationary2DView stateIndex={controlState.targetStateIndex} />

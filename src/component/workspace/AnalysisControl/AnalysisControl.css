@@ -33,7 +33,7 @@
 .stationary-selected-readout {
   min-height: 30px;
   display: grid;
-  grid-template-columns: auto auto minmax(0, 1fr);
+  grid-template-columns: auto auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 8px;
   padding: 3px 8px;
@@ -68,6 +68,30 @@
   font-weight: 800;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.stationary-selected-readout button {
+  min-height: 24px;
+  padding: 3px 9px;
+  border: 1px solid #2f6f8f;
+  border-radius: 8px;
+  color: #ffffff;
+  background: #2f6f8f;
+  font-size: 0.68rem;
+  font-weight: 850;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.stationary-selected-readout button:hover:not(:disabled) {
+  background: #174f6b;
+}
+
+.stationary-selected-readout button:disabled {
+  border-color: #cbd3da;
+  color: #7d8a94;
+  background: #edf1f4;
+  cursor: not-allowed;
 }
 
 .stationary-level-layout {
@@ -156,6 +180,16 @@
   height: 100%;
   min-height: 132px;
   display: block;
+}
+
+.energy-level-empty {
+  min-height: 132px;
+  display: grid;
+  place-items: center;
+  color: #64717d;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-align: center;
 }
 
 .energy-axis {
