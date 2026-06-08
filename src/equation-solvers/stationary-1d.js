@@ -123,6 +123,51 @@ export function buildHamiltonian1D({
   };
 }
 
+export function buildFreeStationary1D({
+  mass,
+  length,
+  gridSteps,
+  stateCount = 6,
+  hbar = 1,
+}) {
+  assertPositiveFinite(mass, 'mass');
+  assertPositiveFinite(length, 'length');
+  assertPositiveFinite(hbar, 'hbar');
+  assertGridSteps(gridSteps);
+  assertStateCount(stateCount);
+
+  const dx = length / (gridSteps - 1);
+  const alpha = (hbar * hbar) / (2 * mass * dx * dx);
+  const interiorSize = gridSteps - 2;
+  const selectedStateCount = Math.min(stateCount, interiorSize);
+
+  const eigenvalues = Array.from({ length: selectedStateCount }, (_, index) => {
+    const mode = index + 1;
+
+    return 2 * alpha * (1 - Math.cos((mode * Math.PI) / (gridSteps - 1)));
+  });
+
+  const eigenstates = Array.from({ length: selectedStateCount }, (_, index) => {
+    const mode = index + 1;
+    const interiorState = Array.from({ length: interiorSize }, (_, interiorIndex) => (
+      Math.sin((mode * Math.PI * (interiorIndex + 1)) / (gridSteps - 1))
+    ));
+
+    return [
+      0,
+      ...normalizeInteriorState(interiorState, dx),
+      0,
+    ];
+  });
+
+  return {
+    eigenvalues,
+    eigenstates,
+    dx,
+    alpha,
+  };
+}
+
 export function solveStationary1D({
   mass,
   length,
