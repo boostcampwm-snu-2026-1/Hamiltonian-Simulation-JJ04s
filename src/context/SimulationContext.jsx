@@ -78,6 +78,7 @@ export const SimulationContext = createContext(null);
  * @property {'stationary' | 'evolution'} analysisMode Selected analysis workflow.
  * @property {'single' | 'all'} energyTargetMode Whether stationary analysis targets one energy level or all levels.
  * @property {number} targetStateIndex Eigenstate index n used in stationary analysis.
+ * @property {number} playbackSpeed Visual playback speed multiplier for evolution animation.
  * @property {boolean} isPotentialValid Whether the current potential input is valid.
  */
 
@@ -127,6 +128,7 @@ const initialControlState = {
   analysisMode: 'stationary',
   energyTargetMode: 'single',
   targetStateIndex: 0,
+  playbackSpeed: 1,
   isPotentialValid: false,
 };
 
