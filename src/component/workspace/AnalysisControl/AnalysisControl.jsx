@@ -1,11 +1,24 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useSimulation } from '../../../hook/useSimulation';
 import { solveStationary1D } from '../../../equation-solvers/stationary-1d';
+import {
+  createGaussianWavePacket1D,
+  stepCrankNicolson1D,
+} from '../../../equation-solvers/time-evolution-1d';
 import './AnalysisControl.css';
+
+const EVOLUTION_FRAME_INTERVAL_MS = 33;
+const MAX_EVOLUTION_STEPS_PER_FRAME = 8;
+const PLAYBACK_SPEEDS = [0.25, 0.5, 1, 2, 4];
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 
 const formatValue = (value) => Number(value).toFixed(2);
+
+const getPlaybackSpeed = (value) => {
+  const speed = Number(value);
+  return PLAYBACK_SPEEDS.includes(speed) ? speed : 1;
+};
 
 const getPositionPercent = (value, length) => {
   const halfLength = length / 2;
@@ -230,6 +243,10 @@ function AnalysisControl() {
     updateControlState,
   } = useSimulation();
   const [tab, setTab] = useState('position');
+  const animationFrameRef = useRef(null);
+  const psiRef = useRef([]);
+  const simulationTimeRef = useRef(0);
+  const evolutionConfigRef = useRef(null);
 
   const is2D = commonState.type === '2D';
   const isStationary = controlState.analysisMode === 'stationary';
@@ -238,8 +255,97 @@ function AnalysisControl() {
   const packet = is2D ? state2D.wavePacket2D : state1D.wavePacket1D;
   const updatePacket = is2D ? updateWavePacket2D : updateWavePacket1D;
   const energyLevels = getEnergyLevels(is2D ? state2D.eigenvalues2D : state1D.eigenvalues1D);
+  const simulationTime = Number.isFinite(commonState.simulationTime)
+    ? commonState.simulationTime
+    : 0;
+  const playbackSpeed = getPlaybackSpeed(controlState.playbackSpeed);
+
+  const createInitialPsi1D = () => createGaussianWavePacket1D({
+    length: commonState.length,
+    gridSteps: commonState.gridSteps,
+    wavePacket: state1D.wavePacket1D,
+  });
+
+  const calculateEvolution1D = () => {
+    if (is2D || commonState.isCalculating) return;
+
+    updateCommonState({ isCalculating: true, isSimulating: false });
+
+    window.setTimeout(() => {
+      try {
+        const initialPsi = createInitialPsi1D();
+
+        psiRef.current = initialPsi;
+        simulationTimeRef.current = 0;
+        updateState1D({ currentPsi1D: initialPsi });
+        updateCommonState({ simulationTime: 0 });
+      } catch (error) {
+        console.error(error);
+        updateState1D({ currentPsi1D: [] });
+        updateCommonState({ simulationTime: 0 });
+      } finally {
+        updateCommonState({ isCalculating: false });
+      }
+    }, 0);
+  };
+
+  const startEvolution = () => {
+    if (is2D) {
+      updateCommonState({ isSimulating: true });
+      return;
+    }
+
+    try {
+      const hasCurrentPsi = Array.isArray(state1D.currentPsi1D)
+        && state1D.currentPsi1D.length === commonState.gridSteps;
+      const initialPsi = hasCurrentPsi ? state1D.currentPsi1D : createInitialPsi1D();
+
+      psiRef.current = initialPsi;
+      simulationTimeRef.current = hasCurrentPsi ? simulationTime : 0;
+      updateState1D({ currentPsi1D: initialPsi });
+      updateCommonState({
+        isSimulating: true,
+        simulationTime: simulationTimeRef.current,
+      });
+    } catch (error) {
+      console.error(error);
+      updateCommonState({ isSimulating: false });
+    }
+  };
+
   const stopEvolution = () => updateCommonState({ isSimulating: false });
-  const resetEvolution = () => updateCommonState({ isSimulating: false, simulationTime: 0 });
+
+  const resetEvolution = () => {
+    if (is2D) {
+      updateCommonState({ isSimulating: false, simulationTime: 0 });
+      return;
+    }
+
+    try {
+      const initialPsi = createInitialPsi1D();
+
+      psiRef.current = initialPsi;
+      simulationTimeRef.current = 0;
+      updateState1D({ currentPsi1D: initialPsi });
+      updateCommonState({ isSimulating: false, simulationTime: 0 });
+    } catch (error) {
+      console.error(error);
+      updateState1D({ currentPsi1D: [] });
+      updateCommonState({ isSimulating: false, simulationTime: 0 });
+    }
+  };
+
+  const updatePacketParameter = (updates) => {
+    updatePacket(updates);
+
+    if (is2D) return;
+
+    psiRef.current = [];
+    simulationTimeRef.current = 0;
+    updateState1D({ currentPsi1D: [] });
+    updateCommonState({ isSimulating: false, simulationTime: 0 });
+  };
+
   const calculateStationary1D = () => {
     if (is2D || !isStationary || commonState.isCalculating) return;
 
@@ -285,6 +391,138 @@ function AnalysisControl() {
     }, 0);
   };
 
+  useEffect(() => {
+    if (commonState.type !== '1D') {
+      evolutionConfigRef.current = null;
+      return;
+    }
+
+    const previousConfig = evolutionConfigRef.current;
+    const nextConfig = {
+      mass: commonState.mass,
+      length: commonState.length,
+      gridSteps: commonState.gridSteps,
+      potentialArray: state1D.potentialArray1D,
+    };
+
+    evolutionConfigRef.current = nextConfig;
+
+    if (!previousConfig) return;
+
+    const hasChanged = previousConfig.mass !== nextConfig.mass
+      || previousConfig.length !== nextConfig.length
+      || previousConfig.gridSteps !== nextConfig.gridSteps
+      || previousConfig.potentialArray !== nextConfig.potentialArray;
+
+    if (!hasChanged) return;
+
+    psiRef.current = [];
+    simulationTimeRef.current = 0;
+    updateState1D({ currentPsi1D: [] });
+    updateCommonState({ isSimulating: false, simulationTime: 0 });
+  }, [
+    commonState.type,
+    commonState.mass,
+    commonState.length,
+    commonState.gridSteps,
+    state1D.potentialArray1D,
+    updateCommonState,
+    updateState1D,
+  ]);
+
+  useEffect(() => {
+    if (
+      commonState.type !== '1D'
+      || controlState.analysisMode !== 'evolution'
+      || !commonState.isSimulating
+    ) {
+      if (animationFrameRef.current !== null) {
+        window.cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+
+      return undefined;
+    }
+
+    let lastFrameTimestamp = 0;
+    let accumulatedFrameTime = 0;
+
+    const runFrame = (timestamp) => {
+      if (lastFrameTimestamp === 0) {
+        lastFrameTimestamp = timestamp;
+      }
+
+      const elapsedFrameTime = timestamp - lastFrameTimestamp;
+      lastFrameTimestamp = timestamp;
+      accumulatedFrameTime += elapsedFrameTime * playbackSpeed;
+
+      if (accumulatedFrameTime >= EVOLUTION_FRAME_INTERVAL_MS) {
+        let frameSteps = 0;
+
+        try {
+          let nextPsi = psiRef.current.length === commonState.gridSteps
+            ? psiRef.current
+            : createInitialPsi1D();
+          let nextSimulationTime = simulationTimeRef.current;
+
+          while (
+            accumulatedFrameTime >= EVOLUTION_FRAME_INTERVAL_MS
+            && frameSteps < MAX_EVOLUTION_STEPS_PER_FRAME
+          ) {
+            nextPsi = stepCrankNicolson1D({
+              psi: nextPsi,
+              mass: commonState.mass,
+              length: commonState.length,
+              gridSteps: commonState.gridSteps,
+              timeStep: commonState.timeStep,
+              potentialArray: state1D.potentialArray1D,
+            });
+            nextSimulationTime += commonState.timeStep;
+            accumulatedFrameTime -= EVOLUTION_FRAME_INTERVAL_MS;
+            frameSteps += 1;
+          }
+
+          if (frameSteps === MAX_EVOLUTION_STEPS_PER_FRAME) {
+            accumulatedFrameTime = 0;
+          }
+
+          psiRef.current = nextPsi;
+          simulationTimeRef.current = nextSimulationTime;
+          updateState1D({ currentPsi1D: nextPsi });
+          updateCommonState({ simulationTime: nextSimulationTime });
+        } catch (error) {
+          console.error(error);
+          updateCommonState({ isSimulating: false });
+          return;
+        }
+      }
+
+      animationFrameRef.current = window.requestAnimationFrame(runFrame);
+    };
+
+    animationFrameRef.current = window.requestAnimationFrame(runFrame);
+
+    return () => {
+      if (animationFrameRef.current !== null) {
+        window.cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+    };
+  }, [
+    commonState.type,
+    commonState.isSimulating,
+    commonState.mass,
+    commonState.length,
+    commonState.gridSteps,
+    commonState.timeStep,
+    controlState.analysisMode,
+    playbackSpeed,
+    state1D.potentialArray1D,
+    state1D.wavePacket1D,
+    updateCommonState,
+    updateState1D,
+  ]);
+
   return (
     <section className="analysis-control" aria-labelledby="analysis-control-title">
       <header className="panel-header">
@@ -306,6 +544,19 @@ function AnalysisControl() {
           />
         ) : (
           <>
+            <div className="stationary-selected-readout evolution-readout">
+              <span>Prepared</span>
+              <strong>t = {simulationTime.toFixed(2)}</strong>
+              <em>Grid = {commonState.gridSteps}</em>
+              <button
+                type="button"
+                onClick={calculateEvolution1D}
+                disabled={is2D || commonState.isCalculating}
+              >
+                {commonState.isCalculating ? 'Calculating' : 'Calculate'}
+              </button>
+            </div>
+
             <div className="evolution-mode-tabs" aria-label="Evolution parameter type">
               <button
                 type="button"
@@ -340,7 +591,7 @@ function AnalysisControl() {
                       min={-halfLength}
                       max={halfLength}
                       value={packet.x0}
-                      onChange={(value) => updatePacket({ x0: value })}
+                      onChange={(value) => updatePacketParameter({ x0: value })}
                     />
                     {is2D && (
                       <SliderRow
@@ -348,7 +599,7 @@ function AnalysisControl() {
                         min={-halfLength}
                         max={halfLength}
                         value={packet.y0}
-                        onChange={(value) => updatePacket({ y0: value })}
+                        onChange={(value) => updatePacketParameter({ y0: value })}
                       />
                     )}
                   </>
@@ -359,7 +610,7 @@ function AnalysisControl() {
                       min={-12}
                       max={12}
                       value={is2D ? packet.kx0 : packet.k0}
-                      onChange={(value) => updatePacket(is2D ? { kx0: value } : { k0: value })}
+                      onChange={(value) => updatePacketParameter(is2D ? { kx0: value } : { k0: value })}
                     />
                     {is2D && (
                       <SliderRow
@@ -367,7 +618,7 @@ function AnalysisControl() {
                         min={-12}
                         max={12}
                         value={packet.ky0}
-                        onChange={(value) => updatePacket({ ky0: value })}
+                        onChange={(value) => updatePacketParameter({ ky0: value })}
                       />
                     )}
                   </>
@@ -377,13 +628,13 @@ function AnalysisControl() {
                   min={0.2}
                   max={4}
                   value={packet.sigma}
-                  onChange={(value) => updatePacket({ sigma: value })}
+                  onChange={(value) => updatePacketParameter({ sigma: value })}
                 />
                 <div className="evolution-actions">
                   <button
                     type="button"
                     className="primary"
-                    onClick={() => updateCommonState({ isSimulating: true })}
+                    onClick={startEvolution}
                   >
                     Play
                   </button>
@@ -393,6 +644,21 @@ function AnalysisControl() {
                   <button type="button" onClick={resetEvolution}>
                     Reset
                   </button>
+                </div>
+                <div className="evolution-speed-control" aria-label="Playback speed">
+                  <span>Speed</span>
+                  <div className="evolution-speed-options">
+                    {PLAYBACK_SPEEDS.map((speed) => (
+                      <button
+                        key={speed}
+                        type="button"
+                        className={playbackSpeed === speed ? 'active' : ''}
+                        onClick={() => updateControlState({ playbackSpeed: speed })}
+                      >
+                        {speed}x
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>

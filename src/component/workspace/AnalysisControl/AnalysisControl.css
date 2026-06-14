@@ -16,7 +16,7 @@
 .analysis-control-body {
   min-height: 0;
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr);
   gap: 7px;
   padding: 8px 10px 9px;
   overflow: hidden;
@@ -404,6 +404,55 @@
 }
 
 .evolution-actions button.primary {
+  border-color: #2f6f8f;
+  color: #ffffff;
+  background: #2f6f8f;
+}
+
+.evolution-speed-control {
+  min-width: 0;
+  min-height: 27px;
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  align-items: center;
+  gap: 7px;
+  padding: 2px 7px;
+  border: 1px solid #d5dde4;
+  border-radius: 8px;
+  background: #fbfcfd;
+}
+
+.evolution-speed-control span {
+  color: #64717d;
+  font-size: 0.68rem;
+  font-weight: 800;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.evolution-speed-options {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.evolution-speed-options button {
+  min-width: 0;
+  min-height: 21px;
+  padding: 2px 3px;
+  border: 1px solid #cbd3da;
+  border-radius: 6px;
+  color: #4f5d68;
+  background: #ffffff;
+  font-size: 0.66rem;
+  font-weight: 850;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.evolution-speed-options button.active {
   border-color: #2f6f8f;
   color: #ffffff;
   background: #2f6f8f;
