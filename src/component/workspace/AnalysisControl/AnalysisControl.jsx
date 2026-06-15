@@ -445,56 +445,63 @@ function AnalysisControl() {
     }
 
     let lastFrameTimestamp = 0;
-    let accumulatedFrameTime = 0;
 
     const runFrame = (timestamp) => {
       if (lastFrameTimestamp === 0) {
         lastFrameTimestamp = timestamp;
+        animationFrameRef.current = window.requestAnimationFrame(runFrame);
+        return;
       }
 
-      const elapsedFrameTime = timestamp - lastFrameTimestamp;
+      const elapsedFrameTime = Math.min(
+        timestamp - lastFrameTimestamp,
+        EVOLUTION_FRAME_INTERVAL_MS * MAX_EVOLUTION_STEPS_PER_FRAME,
+      );
       lastFrameTimestamp = timestamp;
-      accumulatedFrameTime += elapsedFrameTime * playbackSpeed;
 
-      if (accumulatedFrameTime >= EVOLUTION_FRAME_INTERVAL_MS) {
-        let frameSteps = 0;
+      try {
+        let nextPsi = psiRef.current.length === commonState.gridSteps
+          ? psiRef.current
+          : createInitialPsi1D();
+        let nextSimulationTime = simulationTimeRef.current;
+        const baseTimeStep = Number.isFinite(commonState.timeStep) && commonState.timeStep > 0
+          ? commonState.timeStep
+          : 0;
+        const frameTimeStep = baseTimeStep
+          * playbackSpeed
+          * (elapsedFrameTime / EVOLUTION_FRAME_INTERVAL_MS);
 
-        try {
-          let nextPsi = psiRef.current.length === commonState.gridSteps
-            ? psiRef.current
-            : createInitialPsi1D();
-          let nextSimulationTime = simulationTimeRef.current;
-
-          while (
-            accumulatedFrameTime >= EVOLUTION_FRAME_INTERVAL_MS
-            && frameSteps < MAX_EVOLUTION_STEPS_PER_FRAME
-          ) {
-            nextPsi = stepCrankNicolson1D({
-              psi: nextPsi,
-              mass: commonState.mass,
-              length: commonState.length,
-              gridSteps: commonState.gridSteps,
-              timeStep: commonState.timeStep,
-              potentialArray: state1D.potentialArray1D,
-            });
-            nextSimulationTime += commonState.timeStep;
-            accumulatedFrameTime -= EVOLUTION_FRAME_INTERVAL_MS;
-            frameSteps += 1;
-          }
-
-          if (frameSteps === MAX_EVOLUTION_STEPS_PER_FRAME) {
-            accumulatedFrameTime = 0;
-          }
-
-          psiRef.current = nextPsi;
-          simulationTimeRef.current = nextSimulationTime;
-          updateState1D({ currentPsi1D: nextPsi });
-          updateCommonState({ simulationTime: nextSimulationTime });
-        } catch (error) {
-          console.error(error);
-          updateCommonState({ isSimulating: false });
+        if (frameTimeStep <= 0) {
+          animationFrameRef.current = window.requestAnimationFrame(runFrame);
           return;
         }
+
+        const frameSteps = Math.min(
+          MAX_EVOLUTION_STEPS_PER_FRAME,
+          Math.max(1, Math.ceil(frameTimeStep / baseTimeStep)),
+        );
+        const subTimeStep = frameTimeStep / frameSteps;
+
+        for (let index = 0; index < frameSteps; index += 1) {
+          nextPsi = stepCrankNicolson1D({
+            psi: nextPsi,
+            mass: commonState.mass,
+            length: commonState.length,
+            gridSteps: commonState.gridSteps,
+            timeStep: subTimeStep,
+            potentialArray: state1D.potentialArray1D,
+          });
+          nextSimulationTime += subTimeStep;
+        }
+
+        psiRef.current = nextPsi;
+        simulationTimeRef.current = nextSimulationTime;
+        updateState1D({ currentPsi1D: nextPsi });
+        updateCommonState({ simulationTime: nextSimulationTime });
+      } catch (error) {
+        console.error(error);
+        updateCommonState({ isSimulating: false });
+        return;
       }
 
       animationFrameRef.current = window.requestAnimationFrame(runFrame);
