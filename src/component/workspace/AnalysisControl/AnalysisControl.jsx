@@ -10,6 +10,9 @@ import './AnalysisControl.css';
 const EVOLUTION_FRAME_INTERVAL_MS = 33;
 const MAX_EVOLUTION_STEPS_PER_FRAME = 8;
 const PLAYBACK_SPEEDS = [0.25, 0.5, 1, 2, 4];
+const ENERGY_GROUP_TOLERANCE = 0.005;
+const ENERGY_LEVEL_TOP_Y = 36;
+const ENERGY_LEVEL_BOTTOM_Y = 152;
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 
@@ -40,7 +43,7 @@ const getEnergyGroups = (levels) => {
   const groups = [];
 
   levels.forEach((level) => {
-    const group = groups.find(item => Math.abs(item.energy - level.energy) < 1e-6);
+    const group = groups.find(item => Math.abs(item.energy - level.energy) <= ENERGY_GROUP_TOLERANCE);
 
     if (group) {
       group.levels.push(level);
@@ -142,15 +145,21 @@ function StationaryLevelPicker({
   canCalculate,
 }) {
   const hasLevels = levels.length > 0;
-  const minEnergy = hasLevels ? Math.min(...levels.map(level => level.energy)) : 0;
-  const maxEnergy = hasLevels ? Math.max(...levels.map(level => level.energy)) : 1;
-  const range = Math.max(maxEnergy - minEnergy, 1);
+  const anchorBottomEnergy = hasLevels ? levels[0].energy : 0;
+  const anchorTopEnergy = hasLevels
+    ? levels.find(level => level.n === 5)?.energy ?? levels[levels.length - 1].energy
+    : 1;
+  const anchorRange = Math.max(anchorTopEnergy - anchorBottomEnergy, 0.001);
   const selectedLevel = hasLevels ? levels.find(level => level.n === selectedIndex) ?? levels[0] : null;
   const selectedSliderIndex = hasLevels
     ? Math.max(0, levels.findIndex(level => level.n === selectedLevel.n))
     : -1;
   const groups = getEnergyGroups(levels);
-  const toY = (energy) => 152 - ((energy - minEnergy) / range) * 116;
+  const toY = (energy) => {
+    const ratio = clamp((energy - anchorBottomEnergy) / anchorRange, 0, 1);
+
+    return ENERGY_LEVEL_BOTTOM_Y - ratio * (ENERGY_LEVEL_BOTTOM_Y - ENERGY_LEVEL_TOP_Y);
+  };
 
   return (
     <div className="stationary-editor">
