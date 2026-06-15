@@ -86,7 +86,7 @@ export const SimulationContext = createContext(null);
 const initialCommonState = {
   type: '1D',
   mass: 1.0,
-  length: 10.0,
+  length: 20.0,
   gridSteps: 64,
   timeStep: 0.1,
   potentialMode: 'draw',

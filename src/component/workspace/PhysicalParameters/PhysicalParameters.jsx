@@ -7,7 +7,7 @@ const LIMITS = {
   mass: { min: 0.001, max: Number.MAX_SAFE_INTEGER },
   gridSteps: {
     min: 16,
-    max1D: 128,
+    max1D: 256,
     max2D: 512,
   },
 };
@@ -15,7 +15,7 @@ const LIMITS = {
 const SLIDER_LIMITS = {
   mass: { min: 0.1, max: 20 },
   gridSteps: {
-    max1D: 128,
+    max1D: 256,
     max2D: 256,
   },
 };
