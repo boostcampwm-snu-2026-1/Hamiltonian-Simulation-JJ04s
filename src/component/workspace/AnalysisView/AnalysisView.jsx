@@ -23,6 +23,16 @@ const getMinMax = (samples, keys) => {
   };
 };
 
+const getSymmetricMinMax = (samples, keys) => {
+  const bounds = getMinMax(samples, keys);
+  const extent = Math.max(Math.abs(bounds.min), Math.abs(bounds.max), 0.001);
+
+  return {
+    min: -extent,
+    max: extent,
+  };
+};
+
 const buildChartPoints = (samples, key, bounds, width, height, padding) => {
   const range = Math.max(bounds.max - bounds.min, 0.001);
 
@@ -190,7 +200,7 @@ function WaveFunctionChart({ samples }) {
   const width = 640;
   const height = 210;
   const padding = { top: 22, right: 22, bottom: 28, left: 42 };
-  const bounds = getMinMax(samples, ['real', 'imaginary']);
+  const bounds = getSymmetricMinMax(samples, ['real', 'imaginary']);
   const zeroY = padding.top + (1 - ((0 - bounds.min) / Math.max(bounds.max - bounds.min, 0.001)))
     * (height - padding.top - padding.bottom);
 
@@ -214,7 +224,7 @@ function EvolutionWaveChart({ samples }) {
   const width = 640;
   const height = 210;
   const padding = { top: 22, right: 22, bottom: 28, left: 42 };
-  const waveBounds = getMinMax(samples, ['real', 'imaginary']);
+  const waveBounds = getSymmetricMinMax(samples, ['real', 'imaginary']);
   const potentialBounds = getMinMax(samples, ['potential']);
   const zeroY = padding.top + (1 - ((0 - waveBounds.min) / Math.max(waveBounds.max - waveBounds.min, 0.001)))
     * (height - padding.top - padding.bottom);
