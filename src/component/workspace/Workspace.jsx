@@ -5,6 +5,8 @@ import PhysicalParameters from './PhysicalParameters/PhysicalParameters';
 import PotentialEditor from './PotentialEditor/PotentialEditor';
 import './Workspace.css';
 
+const IS_2D_ENABLED = false;
+
 function Workspace() {
   const {
     commonState,
@@ -33,6 +35,7 @@ function Workspace() {
             <button
               type="button"
               className={commonState.type === '2D' ? 'active' : ''}
+              disabled={!IS_2D_ENABLED}
               onClick={() => updateCommonState({ type: '2D' })}
             >
               2D

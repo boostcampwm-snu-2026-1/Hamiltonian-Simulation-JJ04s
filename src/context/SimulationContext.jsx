@@ -146,10 +146,24 @@ export const SimulationProvider = ({ children }) => {
   const [controlState, setControlState] = useState(initialControlState);
 
   const updateCommonState = useCallback((updates) => {
-    setCommonState(prev => ({
-      ...prev,
-      ...(typeof updates === 'function' ? updates(prev) : updates),
-    }));
+    setCommonState((prev) => {
+      const nextUpdates = typeof updates === 'function' ? updates(prev) : updates;
+      const nextState = {
+        ...prev,
+        ...(nextUpdates ?? {}),
+      };
+
+      if (nextState.type === '2D') {
+        return {
+          ...nextState,
+          type: '1D',
+          isSimulating: false,
+          simulationTime: 0,
+        };
+      }
+
+      return nextState;
+    });
   }, []);
 
   const updateState1D = useCallback((updates) => {
