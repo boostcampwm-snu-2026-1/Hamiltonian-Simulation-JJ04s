@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useSimulation } from '../../../hook/useSimulation';
 import { parsePotential1D } from '../../../utils/math-parser';
 import './PhysicalParameters.css';
