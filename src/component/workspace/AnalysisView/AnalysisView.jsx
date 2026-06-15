@@ -23,15 +23,96 @@ const getMinMax = (samples, keys) => {
   };
 };
 
-const buildPath = (samples, key, bounds, width, height, padding) => {
+const getSymmetricMinMax = (samples, keys) => {
+  const bounds = getMinMax(samples, keys);
+  const extent = Math.max(Math.abs(bounds.min), Math.abs(bounds.max), 0.001);
+
+  return {
+    min: -extent,
+    max: extent,
+  };
+};
+
+const buildChartPoints = (samples, key, bounds, width, height, padding) => {
   const range = Math.max(bounds.max - bounds.min, 0.001);
 
-  return samples.map((sample, index) => {
+  return samples.map((sample) => {
     const x = padding.left + sample.t * (width - padding.left - padding.right);
     const value = Number.isFinite(sample[key]) ? sample[key] : 0;
     const y = padding.top + (1 - ((value - bounds.min) / range)) * (height - padding.top - padding.bottom);
-    return `${index === 0 ? 'M' : 'L'} ${x.toFixed(2)} ${y.toFixed(2)}`;
-  }).join(' ');
+
+    return { x, y };
+  });
+};
+
+const buildLinearPath = (points) => points.map((point, index) => (
+  `${index === 0 ? 'M' : 'L'} ${point.x.toFixed(2)} ${point.y.toFixed(2)}`
+)).join(' ');
+
+const buildPath = (samples, key, bounds, width, height, padding) => (
+  buildLinearPath(buildChartPoints(samples, key, bounds, width, height, padding))
+);
+
+const getMonotoneSlopes = (points) => {
+  if (points.length < 2) return [];
+
+  const deltas = points.slice(0, -1).map((point, index) => {
+    const nextPoint = points[index + 1];
+    const dx = Math.max(nextPoint.x - point.x, 0.001);
+
+    return (nextPoint.y - point.y) / dx;
+  });
+  const slopes = Array.from({ length: points.length }, () => 0);
+
+  slopes[0] = deltas[0];
+  slopes[points.length - 1] = deltas[deltas.length - 1];
+
+  for (let index = 1; index < points.length - 1; index += 1) {
+    const previousDelta = deltas[index - 1];
+    const nextDelta = deltas[index];
+
+    if (
+      previousDelta === 0
+      || nextDelta === 0
+      || Math.sign(previousDelta) !== Math.sign(nextDelta)
+    ) {
+      slopes[index] = 0;
+      continue;
+    }
+
+    slopes[index] = (2 * previousDelta * nextDelta) / (previousDelta + nextDelta);
+  }
+
+  return slopes;
+};
+
+const buildSplinePath = (samples, key, bounds, width, height, padding) => {
+  const points = buildChartPoints(samples, key, bounds, width, height, padding);
+
+  if (points.length < 3) {
+    return buildLinearPath(points);
+  }
+
+  const slopes = getMonotoneSlopes(points);
+  const commands = [`M ${points[0].x.toFixed(2)} ${points[0].y.toFixed(2)}`];
+
+  for (let index = 0; index < points.length - 1; index += 1) {
+    const point = points[index];
+    const nextPoint = points[index + 1];
+    const dx = nextPoint.x - point.x;
+    const firstControlX = point.x + dx / 3;
+    const firstControlY = point.y + (slopes[index] * dx) / 3;
+    const secondControlX = nextPoint.x - dx / 3;
+    const secondControlY = nextPoint.y - (slopes[index + 1] * dx) / 3;
+
+    commands.push(
+      `C ${firstControlX.toFixed(2)} ${firstControlY.toFixed(2)}, `
+      + `${secondControlX.toFixed(2)} ${secondControlY.toFixed(2)}, `
+      + `${nextPoint.x.toFixed(2)} ${nextPoint.y.toFixed(2)}`,
+    );
+  }
+
+  return commands.join(' ');
 };
 
 const toFiniteNumber = (value, fallback = 0) => (
@@ -119,7 +200,7 @@ function WaveFunctionChart({ samples }) {
   const width = 640;
   const height = 210;
   const padding = { top: 22, right: 22, bottom: 28, left: 42 };
-  const bounds = getMinMax(samples, ['real', 'imaginary']);
+  const bounds = getSymmetricMinMax(samples, ['real', 'imaginary']);
   const zeroY = padding.top + (1 - ((0 - bounds.min) / Math.max(bounds.max - bounds.min, 0.001)))
     * (height - padding.top - padding.bottom);
 
@@ -127,8 +208,8 @@ function WaveFunctionChart({ samples }) {
     <svg className="analysis-chart" viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Real and imaginary wavefunction graph">
       <line className="chart-axis" x1={padding.left} y1={zeroY} x2={width - padding.right} y2={zeroY} />
       <line className="chart-axis vertical" x1={padding.left} y1={padding.top} x2={padding.left} y2={height - padding.bottom} />
-      <path className="wave-real-line" d={buildPath(samples, 'real', bounds, width, height, padding)} />
-      <path className="wave-imaginary-line" d={buildPath(samples, 'imaginary', bounds, width, height, padding)} />
+      <path className="wave-real-line" d={buildSplinePath(samples, 'real', bounds, width, height, padding)} />
+      <path className="wave-imaginary-line" d={buildSplinePath(samples, 'imaginary', bounds, width, height, padding)} />
       <g className="chart-legend">
         <line className="wave-real-line" x1="474" y1="24" x2="504" y2="24" />
         <text x="510" y="28">Real</text>
@@ -143,7 +224,7 @@ function EvolutionWaveChart({ samples }) {
   const width = 640;
   const height = 210;
   const padding = { top: 22, right: 22, bottom: 28, left: 42 };
-  const waveBounds = getMinMax(samples, ['real', 'imaginary']);
+  const waveBounds = getSymmetricMinMax(samples, ['real', 'imaginary']);
   const potentialBounds = getMinMax(samples, ['potential']);
   const zeroY = padding.top + (1 - ((0 - waveBounds.min) / Math.max(waveBounds.max - waveBounds.min, 0.001)))
     * (height - padding.top - padding.bottom);
@@ -154,8 +235,8 @@ function EvolutionWaveChart({ samples }) {
       <line className="chart-axis vertical" x1={padding.left} y1={padding.top} x2={padding.left} y2={height - padding.bottom} />
       <path className="potential-fill" d={`${buildPath(samples, 'potential', potentialBounds, width, height, padding)} L ${width - padding.right} ${height - padding.bottom} L ${padding.left} ${height - padding.bottom} Z`} />
       <path className="potential-line" d={buildPath(samples, 'potential', potentialBounds, width, height, padding)} />
-      <path className="wave-real-line" d={buildPath(samples, 'real', waveBounds, width, height, padding)} />
-      <path className="wave-imaginary-line" d={buildPath(samples, 'imaginary', waveBounds, width, height, padding)} />
+      <path className="wave-real-line" d={buildSplinePath(samples, 'real', waveBounds, width, height, padding)} />
+      <path className="wave-imaginary-line" d={buildSplinePath(samples, 'imaginary', waveBounds, width, height, padding)} />
       <g className="chart-legend">
         <line className="potential-line" x1="414" y1="24" x2="444" y2="24" />
         <text x="450" y="28">V</text>
@@ -174,7 +255,7 @@ function ProbabilityChart({ samples }) {
   const padding = { top: 18, right: 22, bottom: 28, left: 42 };
   const probabilityValues = samples.map(sample => sample.probability).filter(Number.isFinite);
   const bounds = { min: 0, max: Math.max(...probabilityValues, 0.001) };
-  const path = buildPath(samples, 'probability', bounds, width, height, padding);
+  const path = buildSplinePath(samples, 'probability', bounds, width, height, padding);
   const floorY = height - padding.bottom;
   const firstX = padding.left;
   const lastX = width - padding.right;

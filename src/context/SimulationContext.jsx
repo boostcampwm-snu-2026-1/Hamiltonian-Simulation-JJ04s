@@ -78,6 +78,7 @@ export const SimulationContext = createContext(null);
  * @property {'stationary' | 'evolution'} analysisMode Selected analysis workflow.
  * @property {'single' | 'all'} energyTargetMode Whether stationary analysis targets one energy level or all levels.
  * @property {number} targetStateIndex Eigenstate index n used in stationary analysis.
+ * @property {number} playbackSpeed Visual playback speed multiplier for evolution animation.
  * @property {boolean} isPotentialValid Whether the current potential input is valid.
  */
 
@@ -85,7 +86,7 @@ export const SimulationContext = createContext(null);
 const initialCommonState = {
   type: '1D',
   mass: 1.0,
-  length: 10.0,
+  length: 40.0,
   gridSteps: 64,
   timeStep: 0.1,
   potentialMode: 'draw',
@@ -127,6 +128,7 @@ const initialControlState = {
   analysisMode: 'stationary',
   energyTargetMode: 'single',
   targetStateIndex: 0,
+  playbackSpeed: 1,
   isPotentialValid: false,
 };
 
@@ -144,10 +146,24 @@ export const SimulationProvider = ({ children }) => {
   const [controlState, setControlState] = useState(initialControlState);
 
   const updateCommonState = useCallback((updates) => {
-    setCommonState(prev => ({
-      ...prev,
-      ...(typeof updates === 'function' ? updates(prev) : updates),
-    }));
+    setCommonState((prev) => {
+      const nextUpdates = typeof updates === 'function' ? updates(prev) : updates;
+      const nextState = {
+        ...prev,
+        ...(nextUpdates ?? {}),
+      };
+
+      if (nextState.type === '2D') {
+        return {
+          ...nextState,
+          type: '1D',
+          isSimulating: false,
+          simulationTime: 0,
+        };
+      }
+
+      return nextState;
+    });
   }, []);
 
   const updateState1D = useCallback((updates) => {

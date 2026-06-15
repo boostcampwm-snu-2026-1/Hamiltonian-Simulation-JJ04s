@@ -4,10 +4,10 @@ import { parsePotential1D } from '../../../utils/math-parser';
 import './PhysicalParameters.css';
 
 const LIMITS = {
-  mass: { min: 0.001, max: 1000 },
+  mass: { min: 0.001, max: Number.MAX_SAFE_INTEGER },
   gridSteps: {
     min: 16,
-    max1D: 128,
+    max1D: 512,
     max2D: 512,
   },
 };
@@ -15,7 +15,7 @@ const LIMITS = {
 const SLIDER_LIMITS = {
   mass: { min: 0.1, max: 20 },
   gridSteps: {
-    max1D: 128,
+    max1D: 512,
     max2D: 256,
   },
 };
@@ -104,6 +104,9 @@ function PhysicalParameters() {
     updateCommonState,
     state1D,
     updateState1D,
+    state2D,
+    updateState2D,
+    updateControlState,
   } = useSimulation();
   const gridMax = commonState.type === '2D' ? LIMITS.gridSteps.max2D : LIMITS.gridSteps.max1D;
   const gridSliderMax = commonState.type === '2D'
@@ -125,32 +128,53 @@ function PhysicalParameters() {
     setDraft(prev => ({ ...prev, [key]: event.target.value }));
   };
 
-  const commitParameter = (key) => {
-    const value = draft[key];
-    const validators = {
-      mass: validateMass,
-      gridSteps: (nextValue) => validateGridSteps(nextValue, commonState.type),
-    };
-    const fallbackValues = {
-      mass: commonState.mass,
-      gridSteps: commonState.gridSteps,
-    };
+  const commitMass = () => {
+    const value = draft.mass;
+    const fallbackValue = commonState.mass;
 
-    if (validators[key](value)) {
-      setDraft(prev => ({ ...prev, [key]: String(fallbackValues[key]) }));
+    if (validateMass(value)) {
+      setDraft(prev => ({ ...prev, mass: String(fallbackValue) }));
+      return;
+    }
+
+    updateCommonState({ mass: Number(value) });
+  };
+
+  const applyGridSteps = () => {
+    const value = draft.gridSteps;
+    const fallbackValue = commonState.gridSteps;
+
+    if (validateGridSteps(value, commonState.type)) {
+      setDraft(prev => ({ ...prev, gridSteps: String(fallbackValue) }));
       return;
     }
 
     const nextValue = Number(value);
 
-    if (key !== 'gridSteps') {
-      updateCommonState({ [key]: nextValue });
+    if (nextValue === commonState.gridSteps) {
+      return;
+    }
+
+    updateCommonState({
+      gridSteps: nextValue,
+      isSimulating: false,
+      simulationTime: 0,
+    });
+
+    updateControlState({ targetStateIndex: 0 });
+
+    if (commonState.type === '2D') {
+      updateState2D({
+        eigenvalues2D: [],
+        eigenstate2D: [],
+        currentPsi2D: [],
+      });
       return;
     }
 
     let potentialArray1D = resampleArray1D(state1D.potentialArray1D, nextValue);
 
-    if (commonState.type === '1D' && state1D.potentialRaw1D.trim() !== '') {
+    if (state1D.potentialRaw1D.trim() !== '') {
       try {
         potentialArray1D = parsePotential1D(state1D.potentialRaw1D, {
           length: commonState.length,
@@ -161,11 +185,34 @@ function PhysicalParameters() {
       }
     }
 
-    updateCommonState({ gridSteps: nextValue });
+    updateState1D({
+      potentialArray1D,
+      eigenvalues1D: [],
+      eigenstate1D: [],
+      currentPsi1D: [],
+    });
+  };
 
-    if (commonState.type === '1D') {
-      updateState1D({ potentialArray1D });
+  const commitParameter = (key) => {
+    if (key === 'mass') {
+      commitMass();
+      return;
     }
+
+    const value = draft[key];
+    const validators = {
+      gridSteps: (nextValue) => validateGridSteps(nextValue, commonState.type),
+    };
+    const fallbackValues = {
+      gridSteps: commonState.gridSteps,
+    };
+
+    if (validators[key](value)) {
+      setDraft(prev => ({ ...prev, [key]: String(fallbackValues[key]) }));
+      return;
+    }
+
+    applyGridSteps();
   };
 
   const commitOnEnter = (key) => (event) => {
@@ -194,7 +241,7 @@ function PhysicalParameters() {
               step="0.1"
               value={draft.mass}
               onChange={updateDraftParameter('mass')}
-              onBlur={() => commitParameter('mass')}
+              onBlur={commitMass}
               onKeyDown={commitOnEnter('mass')}
             />
             <em className="parameter-unit">m / m0</em>
@@ -206,7 +253,7 @@ function PhysicalParameters() {
               step="0.1"
               value={getRangeValue(draft.mass, SLIDER_LIMITS.mass.min, SLIDER_LIMITS.mass.max)}
               onChange={updateDraftParameter('mass')}
-              onBlur={() => commitParameter('mass')}
+              onBlur={commitMass}
               onKeyDown={commitOnEnter('mass')}
               aria-label="Mass slider"
             />

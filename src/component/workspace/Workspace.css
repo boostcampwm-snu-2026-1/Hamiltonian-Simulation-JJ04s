@@ -120,6 +120,16 @@ input {
   background: #2f6f8f;
 }
 
+.dimension-switch button:disabled {
+  color: #93a0aa;
+  cursor: not-allowed;
+  opacity: 0.72;
+}
+
+.dimension-switch button:disabled.active {
+  color: #ffffff;
+}
+
 .workspace-base {
   height: calc(100vh - 66px);
   min-height: 0;
