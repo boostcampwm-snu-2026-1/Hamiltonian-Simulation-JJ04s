@@ -4,6 +4,7 @@
 
 ## 1. 프로젝트 정보
 - **저장소**: [boostcampwm-snu-2026/Hamiltonian-Simulation-JJ04s] (https://github.com/boostcampwm-snu-2026-1/Hamiltonian-Simulation-JJ04s)
+- **배포 링크**: https://boostcampwm-snu-2026-1.github.io/Hamiltonian-Simulation-JJ04s/
 - **주요 기능**: 1D/2D 슈뢰딩거 방정식의 수치해 도출 및 시각화
 - **기술 스택**: React, JavaScript
 
